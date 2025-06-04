@@ -1,5 +1,5 @@
-# Ignore raw datasets
-datasets/raw/
+datasets/raw/*
+!datasets/raw/.gitkeep
 
 # Ignore system/editor files
 *.DS_Store
