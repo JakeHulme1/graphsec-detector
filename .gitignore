@@ -1,0 +1,10 @@
+# Ignore raw datasets
+datasets/raw/
+
+# Ignore system/editor files
+*.DS_Store
+*.log
+
+# Ignore Python artifacts
+__pycache__/
+*.py[cod]
