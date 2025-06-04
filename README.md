@@ -10,6 +10,8 @@ The associated GitHub repository can be reached here: [LauraWartschinski/Vulnera
 
 The full dataset can be downloaded on Zenodo through the following URL (https://zenodo.org/records/3559203)
 
+Note: `datasets/raw/` is intentionally excluded from pushes to avoid pushing large files.
+
 ### Option 1: Manual Downlaod
 If you already have the dataset downloaded, simply place the file:
 `PyCommitsWithDiffs.json`
@@ -24,6 +26,4 @@ This can be executed by running Git Bash in the project root and executing the f
 bash scripts/download_dataset.sh
 ```
 This will create the `datasets/raw` directory (if missing), download the dataset from Zenodo, and save it as `datasets/raw/PyCommitsWithDiffs.json`
-
-Note: `datasets/raw/` is intentionally excluded from pushes to avoid pushing large files.
 ---
