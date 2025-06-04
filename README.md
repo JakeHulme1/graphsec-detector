@@ -10,7 +10,7 @@ The associated GitHub repository can be reached here: [LauraWartschinski/Vulnera
 
 The full dataset can be downloaded on Zenodo through the following URL (https://zenodo.org/records/3559203)
 
-Note: `datasets/raw/` is intentionally excluded from pushes to avoid pushing large files.
+Note: `datasets/raw/` is listed in `.gitignore` to avoid committing large datasets. However, Git does not track empty folders - so a .gitkeep file is used to preserve the folder structure in the repository.
 
 ### Option 1: Manual Downlaod
 If you already have the dataset downloaded, simply place the file:
