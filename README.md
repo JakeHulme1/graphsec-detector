@@ -2,8 +2,6 @@
 
 > Transformer-based vulnerability detector for Python code using the VUDENC dataset and GraphCodeBERT.
 
-![Status](https://img.shields.io/badge/status-active-brightgreen)
-
 ---
 
 ## Table of Contents
