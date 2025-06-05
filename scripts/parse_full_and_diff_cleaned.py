@@ -38,7 +38,7 @@ def strip_multiline_comments(lines):
 
     for line in lines:
         # Start or end of multi-line block
-        if not in_block and (line.strip().startswith('"""') or line.strip().startswith('"""')):
+        if not in_block and (line.strip().startswith('"""') or line.strip().startswith(''''')):
             in_block = True
             block_delimiter = line.strip()[:3] # Store block_delimiter
             # If its a single line docstring, skip it entirely
