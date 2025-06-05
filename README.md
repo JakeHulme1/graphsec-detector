@@ -56,7 +56,7 @@ The raw dataset is a large (~9GB) JSON array. To make it streamable and compatib
 jq -c '.[]' datasets/raw/PyCommitsWithDiffs.json > datasets/raw/PyCommitsWithDiffs.jsonl
 ```
 
-### Step 2. Run the Preprocessing Script:
+### Step 2. Run the parsing script:
 
 Once the .jsonl file is ready, run the commit parser script:
 
