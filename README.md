@@ -19,10 +19,6 @@
 `graphsec-detector` leverages the GraphCodeBERT transformer model to detect security vulnerabilities in Python source code. It uses the VUDENC dataset, which contains Python commits labeled with Common Weakness Enumeration (CWE) types.
 
 ## Dataset
-This project uses the VUDENC dataset which contains Python commits labeled with vulnerability types. 
-
-<details>
-  <summary>Click to expand</summary>
 
 This project uses the **VUDENC** dataset which contains Python commits labeled with vulnerability types.
 
@@ -34,7 +30,6 @@ This project uses the **VUDENC** dataset which contains Python commits labeled w
 
 Note: `datasets/raw/` is `.gitignore`d to avoid committing large datasets. `.gitkeep` is used to preserve folder structure.
 
-</details>
 
 ### Manual Download 
 
