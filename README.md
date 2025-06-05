@@ -1,30 +1,91 @@
 # graphsec-detector
+
+> Transformer-based vulnerability detector for Python code using the VUDENC dataset and GraphCodeBERT.
+
+![Status](https://img.shields.io/badge/status-active-brightgreen)
+
 ---
 
-## Dataset Download: VUDENC (PyCommitsWithDiffs.json)
+## Table of Contents
+
+- [About](#about)
+- [Dataset](#dataset)
+  - [Manual Download](#manual-download)
+  - [Automated Download](#automated-download)
+- [Data Preprocessing Pipeline](#data-preprocessing-pipeline)
+
+---
+
+## About
+
+`graphsec-detector` leverages the GraphCodeBERT transformer model to detect security vulnerabilities in Python source code. It uses the VUDENC dataset, which contains Python commits labeled with Common Weakness Enumeration (CWE) types.
+
+## Dataset
 This project uses the VUDENC dataset which contains Python commits labeled with vulnerability types. 
 
-The full reference for the academic paper which proposed the VUDENC dataset is: *Wartschinski, L., Noller, Y., Vogel, T., Kehrer, T., and Grunske, L. (2022). Vudenc: Vulnerability detection with deep learning on a natural codebase for python. Inf. Softw. Technol., 144(C).*
+<details>
+  <summary>Click to expand</summary>
 
-The associated GitHub repository can be reached here: [LauraWartschinski/VulnerabilityDetection](https://github.com/LauraWartschinski/VulnerabilityDetection/tree/master)
+This project uses the **VUDENC** dataset which contains Python commits labeled with vulnerability types.
 
-The full dataset can be downloaded on Zenodo through the following URL (https://zenodo.org/records/3559203)
+**Reference:**  
+*Wartschinski, L., et al. (2022). "Vudenc: Vulnerability detection with deep learning on a natural codebase for python." Inf. Softw. Technol., 144(C).*
 
-Note: `datasets/raw/` is listed in `.gitignore` to avoid committing large datasets. However, Git does not track empty folders - so a .gitkeep file is used to preserve the folder structure in the repository.
+- [GitHub Repository](https://github.com/LauraWartschinski/VulnerabilityDetection/tree/master)  
+- [Download Dataset on Zenodo](https://zenodo.org/records/3559203)
 
-### Option 1: Manual Downlaod
-If you already have the dataset downloaded, simply place the file:
-`PyCommitsWithDiffs.json`
-into the follwing path:
-`graphsec-detector/datasets/raw/PyCommitsWithDiffs.json`
+Note: `datasets/raw/` is `.gitignore`d to avoid committing large datasets. `.gitkeep` is used to preserve folder structure.
 
-### Option 2: Automated Download Script
-You can also download the dataset using the provided script:
-`scripts/download_dataset.sh`
-This can be executed by running Git Bash in the project root and executing the following command:
+</details>
+
+### Manual Download 
+
+If you already have the dataset:
+
+Place `PyCommitsWithDiff.json` in: `graphsec-detector/datasets/raw`
+
+### Automated Download
+
+You can run the dataset fetcher using the provided script `download_dataset.sh` This can be executed by running Git Bash in the project root and executing the following command:
+
 ```sh
 bash scripts/download_dataset.sh
 ```
-This will create the `datasets/raw` directory (if missing), download the dataset from Zenodo, and save it as `datasets/raw/PyCommitsWithDiffs.json`
 
----
+## Data Preprocessing Pipeline
+This section outlines the steps required to convert the raw `.json`` dataset into a clean, line-delimited `.jsonl' format and process it into structured code records.
+
+### Step 1. Convert `PyCommitsWithDiffs.json` -> `PyCommitsWithDiffs.jsonl`
+
+The raw dataset is a large (~9GB) JSON array. To make it streamable and compatible with the parser, convert it to `.jsonl` using jq:
+
+```bash
+jq -c '.[]' datasets/raw/PyCommitsWithDiffs.json > datasets/raw/PyCommitsWithDiffs.jsonl
+```
+
+### Step 2. Run the Preprocessing Script:
+
+Once the .jsonl file is ready, run the commit parser script:
+
+```bash
+python scripts/parse_full_and_diff_cleaned.py
+```
+
+This script:
+- Detects encoding
+- Extracts diffs from each commit
+- Filters out comment-only changes
+- Outputs a clean `.jsonl` file at: `datasets/processed/clean_commits.jsonl`
+
+Each line in the output contains:
+```json
+{
+  "sha": "...",
+  "repo": "...",
+  "keyword": "...",
+  "old_code_full": "...",
+  "new_code_full": "...",
+  "old_changed_lines": "...",
+  "new_changed_lines": "..."
+}
+```
