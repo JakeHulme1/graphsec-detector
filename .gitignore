@@ -1,5 +1,10 @@
+# Ignore all files in raw except .gitkeep
 datasets/raw/*
 !datasets/raw/.gitkeep
+
+# Ignore large JSONL files
+datasets/raw/*.jsonl
+datasets/processed/*.jsonl
 
 # Ignore system/editor files
 *.DS_Store
