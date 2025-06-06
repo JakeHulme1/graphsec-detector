@@ -1,0 +1,182 @@
+{
+    "sql injection": {
+        "id": "CWE-89",
+        "name": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+    },
+    "command injection": {
+        "id": "CWE-77",
+        "name": "Command Injection"
+    },
+    "remote code execution": {
+        "id": "CWE-94",
+        "name": "Improper Control of Generation of Code ('Code Injection')"
+    },
+    "path disclosure": {
+        "id": "CWE-200",
+        "name": "Exposure of Sensitive Information to an Unauthorized Actor"
+    },
+    "cross site scripting": {
+        "id": "CWE-79",
+        "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+    },
+    "csrf": {
+        "id": "CWE-352",
+        "name": "Cross-Site Request Forgery (CSRF)"
+    },
+    "open redirect": {
+        "id": "CWE-601",
+        "name": "URL Redirection to Untrusted Site ('Open Redirect')"
+    },
+    "path traversal": {
+        "id": "CWE-22",
+        "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+    },
+    "input validation": {
+        "id": "CWE-20",
+        "name": "Improper Input Validation"
+    },
+    "buffer overflow": {
+        "id": "CWE-120",
+        "name": "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')"
+    },
+    "format string": {
+        "id": "CWE-134",
+        "name": "Use of Externally-Controlled Format String"
+    },
+    "xxe": {
+        "id": "CWE-611",
+        "name": "Improper Restriction of XML External Entity Reference"
+    },
+    "xpath injection": {
+        "id": "CWE-643",
+        "name": "Improper Neutralization of Data within XPath Expressions"
+    },
+    "eval injection": {
+        "id": "CWE-95",
+        "name": "Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+    },
+    "yaml.safe_load": {
+        "id": "CWE-502",
+        "name": "Deserialization of Untrusted Data"
+    },
+    "pickle": {
+        "id": "CWE-502",
+        "name": "Deserialization of Untrusted Data"
+    },
+    "redos": {
+        "id": "CWE-1333",
+        "name": "Inefficient Regular Expression Complexity"
+    },
+    "brute force": {
+        "id": "CWE-521",
+        "name": "Weak Password Requirements"
+    },
+    "hijack": {
+        "id": "CWE-522",
+        "name": "Insufficiently Protected Credentials"
+    },
+    "exploit": {
+        "id": "CWE-284",
+        "name": "Improper Access Control"
+    },
+    "tampering": {
+        "id": "CWE-272",
+        "name": "Least Privilege Violation"
+    },
+    "spoof": {
+        "id": "CWE-290",
+        "name": "Authentication Bypass by Spoofing"
+    },
+    "replay attack": {
+        "id": "CWE-294",
+        "name": "Authentication Bypass by Capture-replay"
+    },
+    "man-in-the-middle": {
+        "id": "CWE-300",
+        "name": "Channel Accessible by Non-Endpoint ('Man-in-the-Middle')"
+    },
+    "session hijacking": {
+        "id": "CWE-384",
+        "name": "Session Fixation"
+    },
+    "session": {
+        "id": "CWE-384",
+        "name": "Session Fixation"
+    },
+    "clickjack": {
+        "id": "CWE-1021",
+        "name": "Improper Restriction of Rendered UI Layers or Frames"
+    },
+    "cross frame scripting": {
+        "id": "CWE-1021",
+        "name": "Improper Restriction of Rendered UI Layers or Frames"
+    },
+    "injection": {
+        "id": "CWE-74",
+        "name": "Improper Neutralization of Special Elements in Output Used by a Downstream Component ('Injection')"
+    },
+    "sanitize": {
+        "id": "CWE-116",
+        "name": "Improper Encoding or Escaping of Output"
+    },
+    "malicious": {
+        "id": "CWE-506",
+        "name": "Embedded Malicious Code"
+    },
+    "unauthorized": {
+        "id": "CWE-285",
+        "name": "Improper Authorization"
+    },
+    "flooding": {
+        "id": "CWE-400",
+        "name": "Uncontrolled Resource Consumption"
+    },
+    "cache overflow": {
+        "id": "CWE-122",
+        "name": "Heap-based Buffer Overflow"
+    },
+    "function injection": {
+        "id": "CWE-917",
+        "name": "Improper Neutralization of Special Elements used in an Expression Language Statement ('Expression Language Injection')"
+    },
+    "generic vulnerability": {
+        "id": "CWE-200",
+        "name": "Exposure of Sensitive Information to an Unauthorized Actor"
+    },
+    "nvd": {
+        "id": "CWE-200",
+        "name": "Exposure of Sensitive Information to an Unauthorized Actor"
+    },
+    "cross origin": {
+        "id": "CWE-346",
+        "name": "Origin Validation Error"
+    },
+    "directory traversal": {
+        "id": "CWE-22",
+        "name": "Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+    },
+    "dom injection": {
+        "id": "CWE-79",
+        "name": "Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+    },
+    "dos": {
+        "id": "CWE-400",
+        "name": " Uncontrolled Resource Consumption"
+    },
+    "execution after redirect": {
+        "id": "CWE-698",
+        "name": "Execution After Redirect (EAR)"
+    },
+    "infinite loop": {
+        "id": "CWE-835",
+        "name": "Loop with Unreachable Exit Condition ('Infinite Loop')"
+    },
+    "replay": {
+        "id": "CWE-294",
+        "name": "Authentication Bypass by Capture-replay"
+    },
+    "unauthorised": {
+        "id": "CWE-285",
+        "name": "Improper Authorization"
+    }
+}

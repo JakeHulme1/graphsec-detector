@@ -6,9 +6,10 @@ import chardet
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_FILE = os.path.join(BASE_DIR, '..', 'datasets', 'processed', 'clean_commits.jsonl')
-RAW_OUTPUT_FILE = os.path.join(BASE_DIR, '..', 'datasets', 'processed', 'raw_keyword_freq.json')
-NORMALIZED_OUTPUT_FILE = os.path.join(BASE_DIR, '..', 'datasets', 'processed', 'normalised_keyword_freq.json')
+INPUT_FILE = os.path.join(BASE_DIR, "..", 'datasets', 'processed', 'clean_commits.jsonl')
+RAW_OUTPUT_FILE = os.path.join(BASE_DIR, "..", 'datasets', 'processed', 'raw_keyword_freq.json')
+NORMALIZED_OUTPUT_FILE = os.path.join(BASE_DIR, "..", 'datasets', 'processed', 'normalised_keyword_freq.json')
+ALIAS_FILE = os.path.join(BASE_DIR, "keyword_aliases.json")
 
 
 # Detect encoding
@@ -23,12 +24,20 @@ def normalise_keyword(keyword: str) -> str:
     keyword = keyword.lower().strip() # Convert to lowercase, trim whitespace
     keyword = re.sub(r'[^a-z0-9\s._-]', '', keyword)  # remove special characters except dots/underscores
     keyword = re.sub(
-         r'\b(fix|check|update|improve|issue|correct|change|prevent|protect|resolve|patch|handle|secure)\b',
+         r'\b(fix|check|update|improve|issue|correct|change|prevent|protect|resolve|patch|handle|secure|insecure|vulnerability|vulnerable|malicious|attack|exploit|unsafe|exposure)\b',
         '',
         keyword
     ) # Remove non-semantic action words (keywords are like: 'pickle improve' in VUDENC)
     keyword = re.sub(r'\s+', ' ', keyword).strip()  # collapse multiple spaces and trim
     return keyword
+
+# Open keyword_aliases json file
+with open(ALIAS_FILE, "r") as f:
+    keyword_aliases = json.load(f)
+
+# Replace any matching aliases 
+def resolve_alias(keyword: str) -> str:
+    return keyword_aliases.get(keyword, keyword)
 
 def main():
     encoding = detect_encoding(INPUT_FILE)
@@ -43,6 +52,7 @@ def main():
                 if raw:
                     raw_counter[raw] += 1
                     norm = normalise_keyword(raw)
+                    norm = resolve_alias(norm)
                     if norm:
                         normalized_counter[norm] += 1
             except json.JSONDecodeError:
