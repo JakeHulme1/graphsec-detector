@@ -61,7 +61,7 @@ jq -c '.[]' datasets/raw/PyCommitsWithDiffs.json > datasets/raw/PyCommitsWithDif
 Once the .jsonl file is ready, run the commit parser script:
 
 ```bash
-python scripts/parse_full_and_diff_cleaned.py
+python pipeline/parse_full_and_diff_cleaned.py
 ```
 
 This script:
