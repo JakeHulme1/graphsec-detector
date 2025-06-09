@@ -31,54 +31,46 @@ This project uses the **VUDENC** dataset which contains Python commits labeled w
 Note: `datasets/raw/` is `.gitignore`d to avoid committing large datasets. `.gitkeep` is used to preserve folder structure.
 
 
-### Manual Download 
+### Download 
 
-If you already have the dataset:
+Download the `.txt` files in the `Code\data` directory from the [VUDENC GitHub Repository](https://github.com/LauraWartschinski/VulnerabilityDetection/tree/master) which contains the data for the following vulnerabilities:
+- Commmand Injection
+- Open Redirect
+- Path Disclousre
+- Remote Code Execution
+- SQL Injection
+- Cross-Site Request Forgery (XSRF)
+- Cross-Site Scripting (XSS)
 
-Place `PyCommitsWithDiff.json` in: `graphsec-detector/datasets/raw`
-
-### Automated Download
-
-You can run the dataset fetcher using the provided script `download_dataset.sh` This can be executed by running Git Bash in the project root and executing the following command:
-
-```sh
-bash scripts/download_dataset.sh
-```
+**IMPORTANT**: Place these .txt folders in `datasets\vudenc\raw` otherwise the preprocessing scripts will not work. 
 
 ## Data Preprocessing Pipeline
-This section outlines the steps required to convert the raw `.json`` dataset into a clean, line-delimited `.jsonl' format and process it into structured code records.
+This section outlines the steps required to convert the raw `.txt`` dataset into a clean, line-delimited `.jsonl' format and process it into structured code records.
 
-### Step 1. Convert `PyCommitsWithDiffs.json` -> `PyCommitsWithDiffs.jsonl`
+### Step 1. Run `load_vudenc.py`
 
-The raw dataset is a large (~9GB) JSON array. To make it streamable and compatible with the parser, convert it to `.jsonl` using jq:
-
+Execute the follwoing command in the project root:
 ```bash
-jq -c '.[]' datasets/raw/PyCommitsWithDiffs.json > datasets/raw/PyCommitsWithDiffs.jsonl
+python pipeline/load_vudenc.py
 ```
 
-### Step 2. Run the parsing script:
+This will:
+- Parse all .txt files from the VUDENC dataset.
+- Extract metadata, raw source code, and vulnerability labels with CWE IDs.
+- Retrieve badparts and goodparts from structured diffs for patch reconstruction.
+- Normalise and aggregates all entries into a single vudenc_raw.jsonl file.
+- Includes built-in logging for warnings and processing progress.
 
-Once the .jsonl file is ready, run the commit parser script:
+The `.jsonl` entries will bw of the format:
 
-```bash
-python pipeline/parse_full_and_diff_cleaned.py
-```
-
-This script:
-- Detects encoding
-- Extracts diffs from each commit
-- Filters out comment-only changes
-- Outputs a clean `.jsonl` file at: `datasets/processed/clean_commits.jsonl`
-
-Each line in the output contains:
 ```json
-{
-  "sha": "...",
-  "repo": "...",
-  "keyword": "...",
-  "old_code_full": "...",
-  "new_code_full": "...",
-  "old_changed_lines": "...",
-  "new_changed_lines": "..."
+{"repo": "...", 
+"commit": "...", 
+"filepath": "...", 
+"label": "...", 
+"cwe_id": "...", 
+"source": "...", 
+"badparts": ["..."], 
+"goodparts": ["..."]
 }
 ```
