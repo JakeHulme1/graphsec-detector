@@ -92,4 +92,4 @@ python pipeline/strip_comments.py
 
 Please note that this script uses tokenization to detect comments and there is logging to notify of any failed tokenizations. 861 fields contained tokenization errors, likely due to malformed escape sequences inside strings and imcomplete multi-line strings within the dataset. This leaves 1028 fully cleaned `source` and `new_code` pairs. 
 
-The fully cleaned dataset is saved as `vudenc_stripped.jsonl` in `datasets/vudenc/raw.
+The fully cleaned dataset is saved as `vudenc_stripped.jsonl` in `datasets/vudenc/raw`.
