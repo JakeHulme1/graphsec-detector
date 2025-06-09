@@ -74,3 +74,12 @@ The `.jsonl` entries will bw of the format:
 "goodparts": ["..."]
 }
 ```
+
+### Step 2. Run `patch_code.py`
+
+Execute the follwoing command in the project root:
+```bash
+python pipeline/patch_code.py
+```
+
+This will remove all `badparts` from the source code, and replace it with `goodparts`, creating a new entry in the `.jsonl` called new_code which is the full patched code. 
