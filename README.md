@@ -8,8 +8,7 @@
 
 - [About](#about)
 - [Dataset](#dataset)
-  - [Manual Download](#manual-download)
-  - [Automated Download](#automated-download)
+  - [Download](download)
 - [Data Preprocessing Pipeline](#data-preprocessing-pipeline)
 
 ---
