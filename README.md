@@ -82,3 +82,12 @@ python pipeline/patch_code.py
 ```
 
 This will remove all `badparts` from the source code, and replace it with `goodparts`, creating a new entry in the `.jsonl` called new_code which is the full patched code. 
+
+### Step 3. Remove all comments from dataset
+
+Executed the following command in the project root:
+```bash
+python pipeline/strip_comments.py
+```
+
+Please note that this script uses tokenization to detect comments and there is logging to notify of any failed tokenizations. 861 fields contained tokenization errors, likely due to malformed escape sequences inside strings and imcomplete multi-line strings within the dataset. This leaves 1028 fully cleaned `source` and `new_code` pairs. 
