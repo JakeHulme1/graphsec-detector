@@ -45,7 +45,7 @@ Download the `.txt` files in the `Code\data` directory from the [VUDENC GitHub R
 **IMPORTANT**: Place these .txt folders in `datasets\vudenc\raw` otherwise the preprocessing scripts will not work. 
 
 ## Data Preprocessing Pipeline
-This section outlines the steps required to convert the raw `.txt` dataset into a clean, line-delimited `.jsonl' format and process it into structured code records.
+This section outlines the steps required to convert the raw `.txt` dataset into a clean, line-delimited `.jsonl` format and process it into structured code records.
 
 ### Step 1. Run `load_vudenc.py`
 
