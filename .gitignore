@@ -1,6 +1,5 @@
-# Ignore all files in raw except .gitkeep
+# Ignore all files in vudenc/raw except .gitkeep
 datasets/vudenc/raw/*
-!datasets/vudenc/raw/.gitkeep
 
 # Ignore large JSONL files
 datasets/raw/*.jsonl
