@@ -27,6 +27,8 @@ This project uses the **VUDENC** dataset which contains Python commits labeled w
 - [GitHub Repository](https://github.com/LauraWartschinski/VulnerabilityDetection/tree/master)  
 - [Download Dataset on Zenodo](https://zenodo.org/records/3559203)
 
+Dataset doi: 10.5281/zenodo.3559841
+
 Note: `datasets/raw/` is `.gitignore`d to avoid committing large datasets. `.gitkeep` is used to preserve folder structure.
 
 
