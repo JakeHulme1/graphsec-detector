@@ -1,5 +1,5 @@
 # Ignore all files in vudenc/raw
-datasets/vudenc/raw/** */
+datasets/vudenc/raw/**
 
 # But don't ignore directories
 !datasets/vudenc/raw/**/
