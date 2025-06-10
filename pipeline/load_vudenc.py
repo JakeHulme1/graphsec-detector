@@ -51,7 +51,7 @@ def load_vudenc_file(file_path: Path, label: str, cwe_id: str) -> Generator[Dict
                     "filepath": filepath,
                     "label": label,
                     "cwe_id": cwe_id,
-                    "source": filedata.get("source", ""),
+                    "sourceWithComments": filedata.get("sourceWithComments", ""),
                     "badparts": first_change.get("badparts", []),
                     "goodparts": first_change.get("goodparts", [])
                 }

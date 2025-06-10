@@ -48,7 +48,7 @@ def patch_source_code(source: str, badparts: List[str], goodparts: List[str]) ->
         else:
             patched_lines.append(line)
 
-        return "\n".join(patched_lines)
+    return "\n".join(patched_lines)
     
 def patch_dataset(input_path: Path, output_path: Path) -> None:
     """
@@ -67,16 +67,16 @@ def patch_dataset(input_path: Path, output_path: Path) -> None:
             entry = json.loads(line)
             count_total += 1
 
-            source = entry.get("source", "")
+            sourceWithComments = entry.get("sourceWithComments", "")
             badparts = entry.get("badparts", "")
             goodparts = entry.get("goodparts", "")
 
-            if not badparts or goodparts:
+            if not (badparts and goodparts):
                 logging.info(f"Skipping patch (no diff): {entry.get('filepath')}, commit {entry.get('commit')}")
-                entry["new_code"] = source
+                entry["new_code"] = sourceWithComments
                 count_skipped += 1
             else:
-                new_code = patch_source_code(source, badparts, goodparts)
+                new_code = patch_source_code(sourceWithComments, badparts, goodparts)
                 entry["new_code"] = new_code
                 count_patched += 1
 
