@@ -43,6 +43,8 @@ Download the `.txt` files in the `Code\data` directory from the [VUDENC GitHub R
 - Cross-Site Request Forgery (XSRF)
 - Cross-Site Scripting (XSS)
 
+Alternatively, download the `.txt` files from the author's [Zenodo Page](https://zenodo.org/records/3559841#.XeVaZNVG2Hs). The files needed are all the ones beginning with `plain_...txt`.
+
 **IMPORTANT**: Place these .txt folders in `datasets\vudenc\raw` otherwise the preprocessing scripts will not work. 
 
 ## Data Preprocessing Pipeline
