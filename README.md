@@ -58,11 +58,11 @@ This script parses the VUDENC `.txt` files into three JSONL datasets at differen
 - **Commit-Level** (`commits.jsonl)
 - **Repo-Level** (repos.jsonl)
 
-### Usage
+#### Usage
 ```bash
 python export_vudenc_triples.py \
   --input-dir  /path/to/datasets/vudenc/raw \
   --output-dir /path/to/datasets/vudenc/raw
 ```
 
-This will produce `files.jsonl`, `commits.jsonl`, `repos.jsonl` all under the `--output-dir.
+This will produce `files.jsonl`, `commits.jsonl`, `repos.jsonl` all under the `--output-dir`.
