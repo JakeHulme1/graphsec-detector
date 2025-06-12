@@ -20,4 +20,4 @@ datasets/processed/*.jsonl
 
 # Ignore Python artifacts
 __pycache__/
-*.py[cod]
+*.py[cod]"datasets/csn/csn_negatives.jsonl" 
