@@ -41,6 +41,7 @@ def aggregate_file_changes(filepath: str, filedata: Dict[str, Any]) -> Dict[str,
         - remove (sum of removes)
         - badparts
         - goodparts
+        - source (both commented and non-commented)
     """
     total_add = 0
     total_remove = 0
@@ -101,7 +102,8 @@ def load_vudenc_triples(input_dir: Path, cwe_mapping: Dict[str, str]) -> Dict[st
                         "repo": repo_url,
                         "commit": sha,
                         "label": label,
-                        "cwe_id": cwe_id
+                        "cwe_id": cwe_id,
+                        "is_vulnerable": 1 # mark as vulnerable
                     })
                     files_list.append(summary)
                     file_summaries.append(summary)

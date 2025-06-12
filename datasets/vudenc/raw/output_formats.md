@@ -7,6 +7,7 @@ These outputs result from running the `export_vudenc_triples.py` preprocessing s
   "commit": "4a7915860cc482cb426cbf371ae785bfbae71881",
   "label": "command injection",
   "cwe_id": "CWE-77",
+  "is_vulnerable": 1,
   "filepath": "saker/fuzzers/cmdi.py",
   "add": 32,
   "remove": 11,
