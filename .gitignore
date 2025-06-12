@@ -8,7 +8,7 @@ datasets/vudenc/raw/**
 !datasets/vudenc/raw/.gitkeep
 
 # Don't ignore dataset notes
-!datasets/vudenc/raw/notes.md
+!datasets/vudenc/raw/output_formats.md
 
 # Ignore large JSONL files
 datasets/raw/*.jsonl
