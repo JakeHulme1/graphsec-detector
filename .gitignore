@@ -12,7 +12,7 @@ datasets/vudenc/raw/**
 
 # Ignore large JSONL files
 datasets/raw/*.jsonl
-datasets/processed/*.jsonl
+datasets/prepared/*.jsonl
 
 # Ignore system/editor files
 *.DS_Store
