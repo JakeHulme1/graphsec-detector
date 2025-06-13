@@ -1,24 +1,24 @@
-# Ignore all files in vudenc/raw
-datasets/vudenc/raw/**
 
-# But don't ignore directories
-!datasets/vudenc/raw/**/
-
-# Don't ignore any .gitkeep files
+#  RAW DATA  (keep folder visible, ignore contents)
+datasets/vudenc/raw/**           
+!datasets/vudenc/raw/**/         
 !datasets/vudenc/raw/.gitkeep
-
-# Don't ignore dataset notes
 !datasets/vudenc/raw/output_formats.md
 
-# Ignore large JSONL files
-datasets/raw/*.jsonl
-datasets/prepared/*.jsonl
+#  PREPARED DATA  (keep folder visible, ignore contents)
+datasets/vudenc/prepared/**       
+!datasets/vudenc/prepared/**/      
+!datasets/vudenc/prepared/.gitkeep 
 
-# Ignore system/editor files
+#  OTHER LARGE / ONE-OFF DUMPS
+datasets/raw/*.jsonl
+datasets/csn/csn_negatives.jsonl
+
+#  PYTHON / BUILD ARTIFACTS
+__pycache__/
+*.py[cod]
+
+
+#  SYSTEM / EDITOR RUBBISH
 *.DS_Store
 *.log
-
-# Ignore Python artifacts
-__pycache__/
-*.py[cod]"datasets/csn/csn_negatives.jsonl" 
-"datasets/vudenc/prepared/*.jsonl" 
