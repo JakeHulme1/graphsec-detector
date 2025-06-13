@@ -21,3 +21,4 @@ datasets/prepared/*.jsonl
 # Ignore Python artifacts
 __pycache__/
 *.py[cod]"datasets/csn/csn_negatives.jsonl" 
+"datasets/vudenc/prepared/*.jsonl" 
