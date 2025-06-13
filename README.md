@@ -52,21 +52,32 @@ Alternatively, download the `.txt` files from the author's [Zenodo Page](https:/
 ## Data Preprocessing Pipeline
 This section outlines the steps required to convert the raw `.txt` dataset into a clean, line-delimited `.jsonl` format and process it into structured code records.
 
-### Step 1. Run the parsing script to extract varying granularities of data
+### Step 1. Slice plain_* files into labelled code-blocks (`make_snippets.py`)
 
-This script parses the VUDENC `.txt` files into three JSONL datasets at different granularities:
+Please note, `make_snippets.py` is a modified version of the `makemodel.py` which is the script in [VulunerabilityDetection/Code](https://github.com/LauraWartschinski/VulnerabilityDetection) that splits the data into three random segments and trains the LSTM.
 
-- **File-Level** (`files.jsonl)
-- **Commit-Level** (`commits.jsonl)
-- **Repo-Level** (repos.jsonl)
+The modifications made were:
+  - avoid heavy imports (e.g., `tensorflow`)as this version does not require to build a model
+  - make the script a 'dump-only' script, just producing the labelled data.
+
+`make_snippets.py` walks every plain_* dataset produced by the VUDENC crawler, applies the sliding-window labelling scheme (See section 4 of the [paper](https://arxiv.org/abs/2201.08441)) and emits three ready-to-train JSONL splits for each vulnerability type:
+
+- sql_train.jsonl     # 70 % of blocks
+- sql_valid.jsonl     # 15%
+- sql_test.jsonl      # 15%
 
 #### Usage
 ```bash
-python export_vudenc_triples.py \
-  --input-dir  /path/to/datasets/vudenc/raw \
-  --output-dir /path/to/datasets/vudenc/raw
+  python -m pipeline.make_snippets sql \
+  --dump-only \
+  --raw-dir   datasets/vudenc/raw \ live
+  --out-dir   datasets/vudenc/prepared
 ```
 
-This will produce `files.jsonl`, `commits.jsonl`, `repos.jsonl` all under the `--output-dir`.
+Each line in the output files is:
 
-To see the output format, refer to `datasets\vudenc\raw\output_formats.md
+```json
+{
+  "code": "<raw Python snippet>",
+  "label": 0 | 1}
+```
