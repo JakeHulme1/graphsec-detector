@@ -52,26 +52,21 @@ Alternatively, download the `.txt` files from the author's [Zenodo Page](https:/
 ## Data Preprocessing Pipeline
 This section outlines the steps required to convert the raw `.txt` dataset into a clean, line-delimited `.jsonl` format and process it into structured code records.
 
-### Step 1. Slice plain_* files into labelled code-blocks (`make_snippets.py`)
+### Step 1. Label plain_* files  (`make_snippets.py`)
 
 Please note, `make_snippets.py` is a modified version of the `makemodel.py` which is the script in [VulunerabilityDetection/Code](https://github.com/LauraWartschinski/VulnerabilityDetection) that splits the data into three random segments and trains the LSTM.
 
 The modifications made were:
   - avoid heavy imports (e.g., `tensorflow`)as this version does not require to build a model
   - make the script a 'dump-only' script, just producing the labelled data.
+  - include the repo url in the output jsonl for data leakage prevention downstream.
 
-`make_snippets.py` walks every plain_* dataset produced by the VUDENC crawler, applies the sliding-window labelling scheme (See section 4 of the [paper](https://arxiv.org/abs/2201.08441)) and emits three ready-to-train JSONL splits for each vulnerability type:
+`make_snippets.py` walks every plain_* dataset produced by the VUDENC crawler, applies the sliding-window labelling scheme (See section 4 of the [paper](https://arxiv.org/abs/2201.08441)) and emits JSONL files for each vulnerability.
 
-- sql_train.jsonl     # 70 % of blocks
-- sql_valid.jsonl     # 15%
-- sql_test.jsonl      # 15%
 
 #### Usage
 ```bash
-  python -m pipeline.make_snippets sql \
-  --dump-only \
-  --raw-dir   datasets/vudenc/raw \ live
-  --out-dir   datasets/vudenc/prepared
+  py -3.11 -m pipeline.make_snippets <vuln>.txt --dump-only --raw-dir datasets/vudenc/raw --out-dir datasets/vudenc/prepared
 ```
 
 Each line in the output files is:
@@ -80,4 +75,5 @@ Each line in the output files is:
 {
   "code": "<raw Python snippet>",
   "label": 0 | 1}
+  "repo": <repo_url>
 ```

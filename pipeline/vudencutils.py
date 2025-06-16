@@ -15,19 +15,19 @@ try:
   from keras import backend as K
 except ImportError:
   Sequential = Dense = Dropout = Flatten = LSTM = Conv1D = MaxPooling1D = load_model = Embedding = Bidirectional = sequence = None
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import f1_score
-from sklearn.utils import class_weight
+#from sklearn.metrics import accuracy_score
+#from sklearn.metrics import precision_score
+#from sklearn.metrics import recall_score
+#from sklearn.metrics import f1_score
+#from sklearn.utils import class_weight
 #import tensorflow as tf
 import builtins
 import keyword
 import pickle
 import numpy
 import os
-from gensim.models import Word2Vec, KeyedVectors
-import tensorflow as tf
+#from gensim.models import Word2Vec, KeyedVectors
+#import tensorflow as tf
 try:
     from PIL import Image, ImageDraw, ImageFont
     from termcolor import colored
@@ -662,7 +662,7 @@ def f1_loss(y_true, y_pred):
     r = tp / (tp + fn + K.epsilon())
 
     f1 = 2*p*r / (p+r+K.epsilon())
-    f1 = tf.where(tf.is_nan(f1), tf.zeros_like(f1), f1)
+  #  f1 = tf.where(tf.is_nan(f1), tf.zeros_like(f1), f1)
     return 1 - K.mean(f1)
   
   

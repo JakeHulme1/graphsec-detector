@@ -28,7 +28,7 @@ if "--dump-only" not in sys.argv:
   from sklearn.metrics import recall_score
   from sklearn.metrics import f1_score
 
-from gensim.models import Word2Vec, KeyedVectors
+#from gensim.models import Word2Vec, KeyedVectors
 from pathlib import Path
 import argparse
 from . import vudencutils
@@ -152,265 +152,263 @@ for r in data:
               
               for b in blocks:
                   #each is a tuple of code and label
-                  allblocks.append(b)
+                  code, label = b
+                  allblocks.append({
+                     "code": code,
+                     "label": label,
+                     "repo": r # outer loop's repo id
+                  })
 
+# --- LEGACY CODE NOT NEEDED ---
+# keys = []
 
-keys = []
+# #randomize the sample and split into train, validate and final test set
+# for i in range(len(allblocks)):
+#   keys.append(i)
+# random.shuffle(keys)
 
-#randomize the sample and split into train, validate and final test set
-for i in range(len(allblocks)):
-  keys.append(i)
-random.shuffle(keys)
+# cutoff = round(0.7 * len(keys)) #     70% for the training set
+# cutoff2 = round(0.85 * len(keys)) #   15% for the validation set and 15% for the final test set
 
-cutoff = round(0.7 * len(keys)) #     70% for the training set
-cutoff2 = round(0.85 * len(keys)) #   15% for the validation set and 15% for the final test set
+# keystrain = keys[:cutoff]
+# keystest = keys[cutoff:cutoff2]
+# keysfinaltest = keys[cutoff2:]
 
-keystrain = keys[:cutoff]
-keystest = keys[cutoff:cutoff2]
-keysfinaltest = keys[cutoff2:]
+# print("cutoff " + str(cutoff))
+# print("cutoff2 " + str(cutoff2))
 
-print("cutoff " + str(cutoff))
-print("cutoff2 " + str(cutoff2))
+# # legacy code
+# #with open('data/' + mode + '_dataset_keystrain', 'wb') as fp:
+# #  pickle.dump(keystrain, fp)
+# #with open('data/' + mode + '_dataset_keystest', 'wb') as fp:
+# #  pickle.dump(keystest, fp)
+# #with open('data/' + mode + '_dataset_keysfinaltest', 'wb') as fp:
+# #  pickle.dump(keysfinaltest, fp)
+# --- LEGACY CODE NOT NEEDED ---
 
-# legacy code
-#with open('data/' + mode + '_dataset_keystrain', 'wb') as fp:
-#  pickle.dump(keystrain, fp)
-#with open('data/' + mode + '_dataset_keystest', 'wb') as fp:
-#  pickle.dump(keystest, fp)
-#with open('data/' + mode + '_dataset_keysfinaltest', 'wb') as fp:
-#  pickle.dump(keysfinaltest, fp)
-
-  # ----------------------------------------------
+# ----------------------------------------------
 #  DUMP-ONLY  -->  write JSONL & stop here
 # ----------------------------------------------
 if args.dump_only:
     out_root = Path(args.out_dir)
     out_root.mkdir(parents=True, exist_ok=True)
 
-    splits = [("train", keystrain),
-              ("valid", keystest),
-              ("test",  keysfinaltest)]
+    out_path = out_root / f"{mode}.jsonl"
+    with out_path.open("w", encoding="utf-8") as f_out:
+      for item in allblocks:
+        f_out.write(json.dumps({
+          "code": item["code"],
+          "label": int(item["label"]),
+          "repo": item["repo"] # keep the repo
+        }) + "\n")
 
-    for split_name, split_keys in splits:
-        out_path = out_root / f"{mode}_{split_name}.jsonl"
-        with out_path.open("w", encoding="utf-8") as f_out:
-            for k in split_keys:
-                snippet, label = allblocks[k]        # tuple(code, 0/1)
-                f_out.write(json.dumps({
-                    "code": snippet,
-                    "label": int(label)          # make sure it’s JSON-serialisable
-                }) + "\n")
-        print(f" wrote {out_path}  ({len(split_keys)} samples)")
-
-    print("Done – labelled snippets ready.  Exiting (dump-only).")
-    sys.exit(0)
-
-TrainX = []
-TrainY = []
-ValidateX = []
-ValidateY = []
-FinaltestX = []
-FinaltestY = []
+# --- LEGACY CODE NOT NEEDED BELOW ---
+# TrainX = []
+# TrainY = []
+# ValidateX = []
+# ValidateY = []
+# FinaltestX = []
+# FinaltestY = []
 
 
-print("Creating training dataset... (" + mode + ")")
-for k in keystrain:
-  block = allblocks[k]    
-  code = block[0]
-  token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
-  vectorlist = []
-  for t in token: #convert all tokens into their word2vec vector representation
-    if t in word_vectors.vocab and t != " ":
-      vector = w2v_model[t]
-      vectorlist.append(vector.tolist()) 
-  TrainX.append(vectorlist) #append the list of vectors to the X (independent variable)
-  TrainY.append(block[1]) #append the label to the Y (dependent variable)
+# print("Creating training dataset... (" + mode + ")")
+# for k in keystrain:
+#   block = allblocks[k]    
+#   code = block[0]
+#   token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
+#   vectorlist = []
+#   for t in token: #convert all tokens into their word2vec vector representation
+#     if t in word_vectors.vocab and t != " ":
+#       vector = w2v_model[t]
+#       vectorlist.append(vector.tolist()) 
+#   TrainX.append(vectorlist) #append the list of vectors to the X (independent variable)
+#   TrainY.append(block[1]) #append the label to the Y (dependent variable)
 
-print("Creating validation dataset...")
-for k in keystest:
-  block = allblocks[k]
-  code = block[0]
-  token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
-  vectorlist = []
-  for t in token: #convert all tokens into their word2vec vector representation
-    if t in word_vectors.vocab and t != " ":
-      vector = w2v_model[t]
-      vectorlist.append(vector.tolist()) 
-  ValidateX.append(vectorlist) #append the list of vectors to the X (independent variable)
-  ValidateY.append(block[1]) #append the label to the Y (dependent variable)
+# print("Creating validation dataset...")
+# for k in keystest:
+#   block = allblocks[k]
+#   code = block[0]
+#   token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
+#   vectorlist = []
+#   for t in token: #convert all tokens into their word2vec vector representation
+#     if t in word_vectors.vocab and t != " ":
+#       vector = w2v_model[t]
+#       vectorlist.append(vector.tolist()) 
+#   ValidateX.append(vectorlist) #append the list of vectors to the X (independent variable)
+#   ValidateY.append(block[1]) #append the label to the Y (dependent variable)
 
-print("Creating finaltest dataset...")
-for k in keysfinaltest:
-  block = allblocks[k]  
-  code = block[0]
-  token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
-  vectorlist = []
-  for t in token: #convert all tokens into their word2vec vector representation
-    if t in word_vectors.vocab and t != " ":
-      vector = w2v_model[t]
-      vectorlist.append(vector.tolist()) 
-  FinaltestX.append(vectorlist) #append the list of vectors to the X (independent variable)
-  FinaltestY.append(block[1]) #append the label to the Y (dependent variable)
+# print("Creating finaltest dataset...")
+# for k in keysfinaltest:
+#   block = allblocks[k]  
+#   code = block[0]
+#   token = vudencutils.getTokens(code) #get all single tokens from the snippet of code
+#   vectorlist = []
+#   for t in token: #convert all tokens into their word2vec vector representation
+#     if t in word_vectors.vocab and t != " ":
+#       vector = w2v_model[t]
+#       vectorlist.append(vector.tolist()) 
+#   FinaltestX.append(vectorlist) #append the list of vectors to the X (independent variable)
+#   FinaltestY.append(block[1]) #append the label to the Y (dependent variable)
 
-print("Train length: " + str(len(TrainX)))
-print("Test length: " + str(len(ValidateX)))
-print("Finaltesting length: " + str(len(FinaltestX)))
-now = datetime.now() # current date and time
-nowformat = now.strftime("%H:%M")
-print("time: ", nowformat)
+# print("Train length: " + str(len(TrainX)))
+# print("Test length: " + str(len(ValidateX)))
+# print("Finaltesting length: " + str(len(FinaltestX)))
+# now = datetime.now() # current date and time
+# nowformat = now.strftime("%H:%M")
+# print("time: ", nowformat)
 
 
-# saving samples
+# # saving samples
 
-#with open('data/plain_' + mode + '_dataset-train-X_'+w2v + "__" + mode2, 'wb') as fp:
-#  pickle.dump(TrainX, fp)
-#with open('data/plain_' + mode + '_dataset-train-Y_'+w2v + "__" + mode2, 'wb') as fp:
-#  pickle.dump(TrainY, fp)
-#with open('data/plain_' + mode + '_dataset-validate-X_'+w2v + "__" + mode2, 'wb') as fp:
-#  pickle.dump(ValidateX, fp)
-#with open('data/plain_' + mode + '_dataset-validate-Y_'+w2v + "__" + mode2, 'wb') as fp:
-#  pickle.dump(ValidateY, fp)
-with open('data/' + mode + '_dataset_finaltest_X', 'wb') as fp:
-  pickle.dump(FinaltestX, fp)
-with open('data/' + mode + '_dataset_finaltest_Y', 'wb') as fp:
-  pickle.dump(FinaltestY, fp)
-#print("saved finaltest.")
+# #with open('data/plain_' + mode + '_dataset-train-X_'+w2v + "__" + mode2, 'wb') as fp:
+# #  pickle.dump(TrainX, fp)
+# #with open('data/plain_' + mode + '_dataset-train-Y_'+w2v + "__" + mode2, 'wb') as fp:
+# #  pickle.dump(TrainY, fp)
+# #with open('data/plain_' + mode + '_dataset-validate-X_'+w2v + "__" + mode2, 'wb') as fp:
+# #  pickle.dump(ValidateX, fp)
+# #with open('data/plain_' + mode + '_dataset-validate-Y_'+w2v + "__" + mode2, 'wb') as fp:
+# #  pickle.dump(ValidateY, fp)
+# with open('data/' + mode + '_dataset_finaltest_X', 'wb') as fp:
+#   pickle.dump(FinaltestX, fp)
+# with open('data/' + mode + '_dataset_finaltest_Y', 'wb') as fp:
+#   pickle.dump(FinaltestY, fp)
+# #print("saved finaltest.")
 
     
 
-#Prepare the data for the LSTM model
+# #Prepare the data for the LSTM model
 
-X_train =  numpy.array(TrainX)
-y_train =  numpy.array(TrainY)
-X_test =  numpy.array(ValidateX)
-y_test =  numpy.array(ValidateY)
-X_finaltest =  numpy.array(FinaltestX)
-y_finaltest =  numpy.array(FinaltestY)
+# X_train =  numpy.array(TrainX)
+# y_train =  numpy.array(TrainY)
+# X_test =  numpy.array(ValidateX)
+# y_test =  numpy.array(ValidateY)
+# X_finaltest =  numpy.array(FinaltestX)
+# y_finaltest =  numpy.array(FinaltestY)
 
-#in the original collection of data, the 0 and 1 were used the other way round, so now they are switched so that "1" means vulnerable and "0" means clean.
+# #in the original collection of data, the 0 and 1 were used the other way round, so now they are switched so that "1" means vulnerable and "0" means clean.
 
-for i in range(len(y_train)):
-  if y_train[i] == 0:
-    y_train[i] = 1
-  else:
-    y_train[i] = 0
+# for i in range(len(y_train)):
+#   if y_train[i] == 0:
+#     y_train[i] = 1
+#   else:
+#     y_train[i] = 0
     
-for i in range(len(y_test)):
-  if y_test[i] == 0:
-    y_test[i] = 1
-  else:
-    y_test[i] = 0
+# for i in range(len(y_test)):
+#   if y_test[i] == 0:
+#     y_test[i] = 1
+#   else:
+#     y_test[i] = 0
     
-for i in range(len(y_finaltest)):
-  if y_finaltest[i] == 0:
-    y_finaltest[i] = 1
-  else:
-    y_finaltest[i] = 0
+# for i in range(len(y_finaltest)):
+#   if y_finaltest[i] == 0:
+#     y_finaltest[i] = 1
+#   else:
+#     y_finaltest[i] = 0
 
 
-now = datetime.now() # current date and time
-nowformat = now.strftime("%H:%M")
-print("numpy array done. ", nowformat)
+# now = datetime.now() # current date and time
+# nowformat = now.strftime("%H:%M")
+# print("numpy array done. ", nowformat)
 
-print(str(len(X_train)) + " samples in the training set.")      
-print(str(len(X_test)) + " samples in the validation set.") 
-print(str(len(X_finaltest)) + " samples in the final test set.")
+# print(str(len(X_train)) + " samples in the training set.")      
+# print(str(len(X_test)) + " samples in the validation set.") 
+# print(str(len(X_finaltest)) + " samples in the final test set.")
   
-csum = 0
-for a in y_train:
-  csum = csum+a
-print("percentage of vulnerable samples: "  + str(int((csum / len(X_train)) * 10000)/100) + "%")
+# csum = 0
+# for a in y_train:
+#   csum = csum+a
+# print("percentage of vulnerable samples: "  + str(int((csum / len(X_train)) * 10000)/100) + "%")
   
-testvul = 0
-for y in y_test:
-  if y == 1:
-    testvul = testvul+1
-print("absolute amount of vulnerable samples in test set: " + str(testvul))
+# testvul = 0
+# for y in y_test:
+#   if y == 1:
+#     testvul = testvul+1
+# print("absolute amount of vulnerable samples in test set: " + str(testvul))
 
-max_length = fulllength 
+# max_length = fulllength 
   
 
-#hyperparameters for the LSTM model
+# #hyperparameters for the LSTM model
 
-dropout = 0.2
-neurons = 100
-optimizer = "adam"
-epochs = 100
-batchsize = 128
+# dropout = 0.2
+# neurons = 100
+# optimizer = "adam"
+# epochs = 100
+# batchsize = 128
 
-now = datetime.now() # current date and time
-nowformat = now.strftime("%H:%M")
-print("Starting LSTM: ", nowformat)
+# now = datetime.now() # current date and time
+# nowformat = now.strftime("%H:%M")
+# print("Starting LSTM: ", nowformat)
 
 
-print("Dropout: " + str(dropout))
-print("Neurons: " + str(neurons))
-print("Optimizer: " + optimizer)
-print("Epochs: " + str(epochs))
-print("Batch Size: " + str(batchsize))
-print("max length: " + str(max_length))
+# print("Dropout: " + str(dropout))
+# print("Neurons: " + str(neurons))
+# print("Optimizer: " + optimizer)
+# print("Epochs: " + str(epochs))
+# print("Batch Size: " + str(batchsize))
+# print("max length: " + str(max_length))
 
-#padding sequences on the same length
-X_train = sequence.pad_sequences(X_train, maxlen=max_length)
-X_test = sequence.pad_sequences(X_test, maxlen=max_length)
-X_finaltest = sequence.pad_sequences(X_finaltest, maxlen=max_length)
+# #padding sequences on the same length
+# X_train = sequence.pad_sequences(X_train, maxlen=max_length)
+# X_test = sequence.pad_sequences(X_test, maxlen=max_length)
+# X_finaltest = sequence.pad_sequences(X_finaltest, maxlen=max_length)
 
-#creating the model  
-model = Sequential()
-model.add(LSTM(neurons, dropout = dropout, recurrent_dropout = dropout)) #around 50 seems good
-model.add(Dense(1, activation='sigmoid'))
-model.compile(loss=vudencutils.f1_loss, optimizer='adam', metrics=[vudencutils.f1])
+# #creating the model  
+# model = Sequential()
+# model.add(LSTM(neurons, dropout = dropout, recurrent_dropout = dropout)) #around 50 seems good
+# model.add(Dense(1, activation='sigmoid'))
+# model.compile(loss=vudencutils.f1_loss, optimizer='adam', metrics=[vudencutils.f1])
 
-now = datetime.now() # current date and time
-nowformat = now.strftime("%H:%M")
-print("Compiled LSTM: ", nowformat)
+# now = datetime.now() # current date and time
+# nowformat = now.strftime("%H:%M")
+# print("Compiled LSTM: ", nowformat)
 
-#account with class_weights for the class-imbalanced nature of the underlying data
-class_weights = class_weight.compute_class_weight('balanced',numpy.unique(y_train),y_train)
+# #account with class_weights for the class-imbalanced nature of the underlying data
+# class_weights = class_weight.compute_class_weight('balanced',numpy.unique(y_train),y_train)
 
-#training the model
-history = model.fit(X_train, y_train, epochs=epochs, batch_size=batchsize, class_weight=class_weights) #epochs more are good, batch_size more is good
+# #training the model
+# history = model.fit(X_train, y_train, epochs=epochs, batch_size=batchsize, class_weight=class_weights) #epochs more are good, batch_size more is good
 
-#validate data on train and test set
+# #validate data on train and test set
 
-for dataset in ["train","test","finaltest"]:
-    print("Now predicting on " + dataset + " set (" + str(dropout) + " dropout)")
+# for dataset in ["train","test","finaltest"]:
+#     print("Now predicting on " + dataset + " set (" + str(dropout) + " dropout)")
     
-    if dataset == "train":
-      yhat_classes = model.predict_classes(X_train, verbose=0)
-      accuracy = accuracy_score(y_train, yhat_classes)
-      precision = precision_score(y_train, yhat_classes)
-      recall = recall_score(y_train, yhat_classes)
-      F1Score = f1_score(y_train, yhat_classes)
+#     if dataset == "train":
+#       yhat_classes = model.predict_classes(X_train, verbose=0)
+#       accuracy = accuracy_score(y_train, yhat_classes)
+#       precision = precision_score(y_train, yhat_classes)
+#       recall = recall_score(y_train, yhat_classes)
+#       F1Score = f1_score(y_train, yhat_classes)
       
-    if dataset == "test":
-      yhat_classes = model.predict_classes(X_test, verbose=0)
-      accuracy = accuracy_score(y_test, yhat_classes)
-      precision = precision_score(y_test, yhat_classes)
-      recall = recall_score(y_test, yhat_classes)
-      F1Score = f1_score(y_test, yhat_classes)
+#     if dataset == "test":
+#       yhat_classes = model.predict_classes(X_test, verbose=0)
+#       accuracy = accuracy_score(y_test, yhat_classes)
+#       precision = precision_score(y_test, yhat_classes)
+#       recall = recall_score(y_test, yhat_classes)
+#       F1Score = f1_score(y_test, yhat_classes)
       
       
-    if dataset == "finaltest":
-      yhat_classes = model.predict_classes(X_finaltest, verbose=0)
-      accuracy = accuracy_score(y_finaltest, yhat_classes)
-      precision = precision_score(y_finaltest, yhat_classes)
-      recall = recall_score(y_finaltest, yhat_classes)
-      F1Score = f1_score(y_finaltest, yhat_classes)
+#     if dataset == "finaltest":
+#       yhat_classes = model.predict_classes(X_finaltest, verbose=0)
+#       accuracy = accuracy_score(y_finaltest, yhat_classes)
+#       precision = precision_score(y_finaltest, yhat_classes)
+#       recall = recall_score(y_finaltest, yhat_classes)
+#       F1Score = f1_score(y_finaltest, yhat_classes)
       
-    print("Accuracy: " + str(accuracy))
-    print("Precision: " + str(precision))
-    print("Recall: " + str(recall))
-    print('F1 score: %f' % F1Score)
-    print("\n")
+#     print("Accuracy: " + str(accuracy))
+#     print("Precision: " + str(precision))
+#     print("Recall: " + str(recall))
+#     print('F1 score: %f' % F1Score)
+#     print("\n")
 
 
 
-now = datetime.now() # current date and time
-nowformat = now.strftime("%H:%M")
-print("saving LSTM model " + mode + ". ", nowformat)
-model.save('model/LSTM_model_'+mode+'.h5')  # creates a HDF5 file 'my_model.h5'
-print("\n\n")
+# now = datetime.now() # current date and time
+# nowformat = now.strftime("%H:%M")
+# print("saving LSTM model " + mode + ". ", nowformat)
+# model.save('model/LSTM_model_'+mode+'.h5')  # creates a HDF5 file 'my_model.h5'
+# print("\n\n")
 
 
 
