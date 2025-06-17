@@ -85,7 +85,7 @@ This script takes in `.jsonl` files from the previous step and:
 - creates the splits (by default it is 70/15/15 but this can be changed in command-line arguments)
 - uses lable-balanced assignment
 
-### Usage
+#### Usage
 
 ```bash
 python split_by_repo.py \
