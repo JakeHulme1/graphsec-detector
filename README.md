@@ -77,3 +77,23 @@ Each line in the output files is:
   "label": 0 | 1}
   "repo": <repo_url>
 ```
+
+### Step 2. Create train / val / test repo-exclusive split (`split_by_repo.py`)
+
+This script takes in `.jsonl` files from the previous step and:
+
+- creates the splits (by default it is 70/15/15 but this can be changed in command-line arguments)
+- uses lable-balanced assignment
+
+### Usage
+
+```bash
+python split_by_repo.py \
+  path/to/your_vuln.jsonl \
+  path/to/output_folder \
+  --train-frac 0.80 \
+  --val-frac   0.10 \
+  --seed       123
+  ```
+
+If no arguments are given for train-frac, val-frac and seed, they will resolve to default values: 70, 15 and 42 respectively.
