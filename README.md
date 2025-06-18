@@ -89,7 +89,7 @@ This script takes in `.jsonl` files from the previous step and:
 
 ```bash
 python split_by_repo.py \
-  path/to/your_vuln.jsonl \
+  path/to/vuln.jsonl \
   path/to/output_folder \
   --train-frac 0.80 \
   --val-frac   0.10 \
