@@ -1,20 +1,20 @@
 # avoid heavy imports
-try:
-  from keras.datasets import imdb
-  from keras.models import Sequential
-  from keras.layers import Dense
-  from keras.layers import Dropout
-  from keras.layers import Flatten
-  from keras.layers import LSTM
-  #from keras.layers.convolutional import Conv1D
-  #from keras.layers.convolutional import MaxPooling1D
-  from keras.models import load_model
-  #from keras.layers.embeddings import Embedding
-  from keras.layers import Bidirectional
-  from keras.preprocessing import sequence
-  from keras import backend as K
-except ImportError:
-  Sequential = Dense = Dropout = Flatten = LSTM = Conv1D = MaxPooling1D = load_model = Embedding = Bidirectional = sequence = None
+# try:
+#   from keras.datasets import imdb
+#   from keras.models import Sequential
+#   from keras.layers import Dense
+#   from keras.layers import Dropout
+#   from keras.layers import Flatten
+#   from keras.layers import LSTM
+#   #from keras.layers.convolutional import Conv1D
+#   #from keras.layers.convolutional import MaxPooling1D
+#   from keras.models import load_model
+#   #from keras.layers.embeddings import Embedding
+#   from keras.layers import Bidirectional
+#   from keras.preprocessing import sequence
+#   from keras import backend as K
+# except ImportError:
+#   Sequential = Dense = Dropout = Flatten = LSTM = Conv1D = MaxPooling1D = load_model = Embedding = Bidirectional = sequence = None
 #from sklearn.metrics import accuracy_score
 #from sklearn.metrics import precision_score
 #from sklearn.metrics import recall_score
@@ -23,17 +23,17 @@ except ImportError:
 #import tensorflow as tf
 import builtins
 import keyword
-import pickle
+# import pickle
 import numpy
 import os
 #from gensim.models import Word2Vec, KeyedVectors
 #import tensorflow as tf
-try:
-    from PIL import Image, ImageDraw, ImageFont
-    from termcolor import colored
-except ImportError:
-    # fall back to stubs so the rest of the module keeps working
-    Image = ImageDraw = ImageFont = colored = None
+# try:
+#     from PIL import Image, ImageDraw, ImageFont
+#     from termcolor import colored
+# except ImportError:
+#     # fall back to stubs so the rest of the module keeps working
+#     Image = ImageDraw = ImageFont = colored = None
 
 
   
