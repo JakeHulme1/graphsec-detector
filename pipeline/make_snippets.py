@@ -15,18 +15,18 @@ import random
 import pickle
 import numpy
 # heavy imports only when we need them
-if "--dump-only" not in sys.argv:
-  from keras.models import Sequential
-  from keras.layers import Dense
-  from keras.layers import LSTM
-  from keras.preprocessing import sequence
-  from keras import backend as K
-  from sklearn.utils import class_weight
-  import tensorflow as tf
-  from sklearn.metrics import accuracy_score
-  from sklearn.metrics import precision_score
-  from sklearn.metrics import recall_score
-  from sklearn.metrics import f1_score
+# if "--dump-only" not in sys.argv:
+#   from keras.models import Sequential
+#   from keras.layers import Dense
+#   from keras.layers import LSTM
+#   from keras.preprocessing import sequence
+#   from keras import backend as K
+#   from sklearn.utils import class_weight
+#   import tensorflow as tf
+#   from sklearn.metrics import accuracy_score
+#   from sklearn.metrics import precision_score
+#   from sklearn.metrics import recall_score
+#   from sklearn.metrics import f1_score
 
 #from gensim.models import Word2Vec, KeyedVectors
 from pathlib import Path
@@ -78,8 +78,8 @@ if not args.dump_only:
     if not os.path.isfile(w2vmodel):
         print("word2vec model is missing")
         sys.exit(1)
-    w2v_model = Word2Vec.load(w2vmodel)
-    word_vectors = w2v_model.wv
+    #w2v_model = Word2Vec.load(w2vmodel)
+    #word_vectors = w2v_model.wv
 
 #load data
 raw_path = Path(args.raw_dir) / f"plain_{mode}{args.raw_ext}"
