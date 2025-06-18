@@ -66,7 +66,7 @@ The modifications made were:
 
 #### Usage
 ```bash
-  py -3.11 -m pipeline.make_snippets <vuln>.txt --dump-only --raw-dir datasets/vudenc/raw --out-dir datasets/vudenc/prepared
+  poetry run python -m pipeline.make_snippets <vuln>.txt --dump-only --raw-dir datasets/vudenc/raw --out-dir datasets/vudenc/prepared
 ```
 
 Each line in the output files is:
@@ -88,7 +88,7 @@ This script takes in `.jsonl` files from the previous step and:
 #### Usage
 
 ```bash
-python split_by_repo.py \
+poetry run python split_by_repo.py \
   path/to/vuln.jsonl \
   path/to/output_folder \
   --train-frac 0.80 \
