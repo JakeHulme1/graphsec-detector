@@ -22,3 +22,6 @@ __pycache__/
 #  SYSTEM / EDITOR RUBBISH
 *.DS_Store
 *.log
+
+# IGNORE VIRTUAL ENVIRONMENT
+.venv/
