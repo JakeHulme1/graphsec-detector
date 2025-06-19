@@ -88,11 +88,11 @@ This script takes in `.jsonl` files from the previous step and:
 #### Usage
 
 ```bash
-poetry run python split_by_repo.py \
+poetry run python pipeline/split_by_repo.py \
   path/to/vuln.jsonl \
   path/to/output_folder \
-  --train-frac 0.80 \
-  --val-frac   0.10 \
+  --train-frac 0.70 \
+  --val-frac   0.15 \
   --seed       123
   ```
 
