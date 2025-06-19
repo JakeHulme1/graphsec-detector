@@ -66,7 +66,7 @@ The modifications made were:
 
 #### Usage
 ```bash
-  poetry run python -m pipeline.make_snippets <vuln> --dump-only --raw-dir datasets/vudenc/raw --out-dir datasets/vudenc/prepared
+  poetry run python -m pipeline.make_snippets <vuln> --dump-only --raw-dir datasets/vudenc/raw --out-dir datasets/vudenc/processed
 ```
 
 Each line in the output files is:
