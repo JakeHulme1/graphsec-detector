@@ -97,3 +97,28 @@ poetry run python split_by_repo.py \
   ```
 
 If no arguments are given for train-frac, val-frac and seed, they will resolve to default values: 70, 15 and 42 respectively.
+
+### Step 3. Extract the DFGs.
+
+#### Step 3.1. Fetch and lock to correct version of GraphCodeBERT 
+
+Since GraphCodeBERT DFG extractor is used, the DFG.py must be imported into the project as a submodule. This step ensures you fetch and lock to the correct version.
+
+Run this from the root:
+
+```bash
+git submodule update --init --recursive
+```
+
+#### Step 3.2. Make the GraphCodeBERT DFG extracter importable without modifying the submodule.
+
+```bash
+ln -s extern/CodeBERT/GraphCodeBERT/translation translation
+```
+
+#### Step 3.3. Install Python dependencies (if they aren't already)
+
+```bash
+poetry env use python3.11
+poetry install
+```
