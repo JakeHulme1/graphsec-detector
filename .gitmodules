@@ -1,0 +1,3 @@
+[submodule "extern/CodeBERT"]
+	path = extern/CodeBERT
+	url = git@github.com:microsoft/CodeBERT.git

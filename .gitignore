@@ -1,11 +1,11 @@
 
-#  RAW DATA  (keep folder visible, ignore contents)
+#  RAW DATA 
 datasets/vudenc/raw/**           
 !datasets/vudenc/raw/**/         
 !datasets/vudenc/raw/.gitkeep
 !datasets/vudenc/raw/output_formats.md
 
-#  PREPARED DATA  (keep folder visible, ignore contents)
+#  PREPARED DATA
 datasets/vudenc/prepared/**       
 !datasets/vudenc/prepared/**/      
 !datasets/vudenc/prepared/.gitkeep 
@@ -13,6 +13,9 @@ datasets/vudenc/prepared/**
 #  OTHER LARGE / ONE-OFF DUMPS
 datasets/raw/*.jsonl
 datasets/csn/csn_negatives.jsonl
+
+# GRAPH-CREATED DATA
+datasets/vudenc/prepared
 
 #  PYTHON / BUILD ARTIFACTS
 __pycache__/
