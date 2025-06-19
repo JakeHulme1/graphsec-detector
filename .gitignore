@@ -6,16 +6,18 @@ datasets/vudenc/raw/**
 !datasets/vudenc/raw/output_formats.md
 
 #  PREPARED DATA
-datasets/vudenc/prepared/**       
-!datasets/vudenc/prepared/**/      
-!datasets/vudenc/prepared/.gitkeep 
+datasets/vudenc/processed/**       
+!datasets/vudenc/processed/**/      
+!datasets/vudenc/processed/.gitkeep 
 
 #  OTHER LARGE / ONE-OFF DUMPS
 datasets/raw/*.jsonl
 datasets/csn/csn_negatives.jsonl
 
 # GRAPH-CREATED DATA
-datasets/vudenc/prepared
+datasets/vudenc/prepared/** */
+!datasets/vudenc/prepared/**/      
+!datasets/vudenc/prepared/.gitkeep 
 
 #  PYTHON / BUILD ARTIFACTS
 __pycache__/
