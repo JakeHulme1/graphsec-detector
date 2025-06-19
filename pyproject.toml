@@ -13,10 +13,6 @@ urllib3 = "^2.5.0"
 transformers = "^4.52.4"
 tensorflow = "2.15"
 
-[[tool.poetry.packages]]
-include = "translation"
-from = "extern/CodeBERT/GraphCodeBERT"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
