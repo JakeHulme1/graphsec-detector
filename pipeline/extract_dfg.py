@@ -1,5 +1,7 @@
 import json
 import argparse
+import tokenize
+from io import StringIO
 from tqdm import tqdm
 from pathlib import Path
 from translation.parser.DFG import DFG_python
@@ -50,11 +52,11 @@ def init_dfg_parser() -> Parser:
     return parser
 
 def parse_code_to_ast(code:str, parser: Parser):
-    # strip comments, alreafy done in vudenc, this is just a failsafe
-    clean_code = remove_comments_and_docstrings(code, "python")
-    # feed into tree-sitter
-    tree = parser.parse(bytes(clean_code, "utf-8"))
-    # return the root
+    try:
+        clean = remove_comments_and_docstrings(code, "python")
+    except tokenize.TokenError:
+        clean = code # fall back to original
+    tree = parser.parse(clean.encode("utf-8"))
     return tree.root_node
 
 def compute_token_maps(code: str, root_node) -> Dict[Tuple[Point, Point], Tuple[int, str]]:
@@ -93,45 +95,61 @@ def main():
 
     # Stream the .jsonl and iterate through each block
     def gen():
+
         for i, rec in enumerate(iter_jsonl(Path(args.input)), start=1):
 
             if i % 100 == 0:
                 print(f"Processed {i} records")
 
-            # Tokenize code (only get offsets)
-            offsets = tokenize_code(rec["code"], tokenizer=tokenizer)
-            rec["offset_mapping"] = offsets
+            try:
 
-            # Generate AST + token map
-            root = parse_code_to_ast(rec["code"], parser)
-            index_map = compute_token_maps(rec["code"], root)
+                # Tokenize code (only get offsets)
+                offsets = tokenize_code(rec["code"], tokenizer=tokenizer)
+                rec["offset_mapping"] = offsets
 
-            print("TOKENS:")
-            for span, (tok_idx, tok_str) in sorted(index_map.items(), key=lambda x: x[1][0]):
-                print(f"  [{tok_idx:2d}] '{tok_str}' at lines {span}")
+                # parse to AST (may throw tokenize.TokenError)
+                root = parse_code_to_ast(rec["code"], parser)
 
-            # run the extractor
-            nodes, _ = DFG_python(root, index_map, {})
+                # compute token-span map
+                index_map = compute_token_maps(rec["code"], root)
 
-            # compute edges
-            edges = [
-                (src, dst)
-                for (_, dst, _, _, src_idxs) in nodes
-                for src in src_idxs
-        ]
+                # print("TOKENS:")
+                # for span, (tok_idx, tok_str) in sorted(index_map.items(), key=lambda x: x[1][0]):
+                #     print(f"  [{tok_idx:2d}] '{tok_str}' at lines {span}")
 
-            # TESTING
-            print("TOKENS:", sorted(index_map.items(), key=lambda x: x[1][0]))
-            print("NODES:", nodes)
-            print("EDGES:", edges)
+                # run the extractor (may throw KeyError)
+                nodes, _ = DFG_python(root, index_map, {})
 
-            # 4) attach and yield
+                # flatten edges
+                edges = [
+                    (src, dst)
+                    for (_, dst, _, _, src_idxs) in nodes
+                    for src in src_idxs
+                ]
+
+            except (tokenize.TokenError, KeyError) as e:
+                print(f"  Skipping record {i} due to parse/DFG error: {e}")
+                yield None
+                continue
+
+            # # TESTING
+            # print("TOKENS:", sorted(index_map.items(), key=lambda x: x[1][0]))
+            # print("NODES:", nodes)
+            # print("EDGES:", edges)
+
             rec["graph_nodes"] = nodes
             rec["graph_edges"] = edges
             yield rec
 
-    write_jsonl(gen(), out_path)
-    print("DFGs extracted!")
+    skipped = 0
+    with out_path.open("w", encoding="utf-8") as f:
+        for rec in gen():
+            if rec is None:
+                skipped += 1
+                continue
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    print(f"DFGs extracted! Skipped {skipped} malformed snippets.")
+
 
 if __name__ == "__main__":
     main()
