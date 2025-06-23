@@ -122,3 +122,8 @@ ln -s extern/CodeBERT/GraphCodeBERT/translation translation
 poetry env use python3.11
 poetry install
 ```
+
+#### Step 3.4. Extract the DFGs and apend to ``prepared` folder ready for training
+
+```bash
+poetry run python -m pipeline.extract_dfg path/to/processed/data path/to/output/folder/desired_file_name.jsonl
