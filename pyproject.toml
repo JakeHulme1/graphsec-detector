@@ -11,7 +11,7 @@ numpy = "^1.26"
 requests = "^2.32.4"
 urllib3 = "^2.5.0"
 transformers = "^4.52.4"
-torch = "2.7.0"
+tree-sitter-python = "^0.23.6"
 
 [build-system]
 requires = ["poetry-core"]

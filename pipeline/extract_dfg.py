@@ -2,7 +2,8 @@ import json
 import argparse
 from tqdm import tqdm
 from pathlib import Path
-from translation.parser.DFG import DFG_Python
+from translation.parser.DFG import DFG_python
+import tree_sitter_python as tspython 
 from tree_sitter import Language, Parser
 from translation.parser.utils import (remove_comments_and_docstrings,
                    tree_to_token_index,
@@ -11,7 +12,9 @@ from typing import List, Dict, Any, Iterator, Tuple
 from transformers import AutoTokenizer
 
 LANG_SO = Path("translation/parser/my-languages.so")
-PY_LANG = Language(str(LANG_SO), "python")
+PY_LANG = Language(tspython.language())
+
+Point = Tuple[int, int]
 
 def iter_jsonl(path: Path) -> Iterator[Dict[str, Any]]:
     """
@@ -34,41 +37,39 @@ def init_tokenizer():
     return tokenizer
 
 def tokenize_code(code:str, tokenizer):
-    batch_encoding = tokenizer(code, return_offsets_mapping=True)
-    return(
-        batch_encoding["input_ids"][0],
-        batch_encoding["attention_mask"][0],
-        batch_encoding["token_type_ids"][0],
-        batch_encoding["offset_mapping"][0],
+    batch_encoding = tokenizer(code, return_offsets_mapping=True, add_special_tokens=True)
+    return batch_encoding["offset_mapping"][0]
 
-    )
-
-def init_dfg_parser(lib_path: str, language: str) -> Parser:
+def init_dfg_parser() -> Parser:
     """
-    Load the compiled Tree-Sitter grammar (.so) and return a Parser
-    bound to the passed language (Python in this project).
+    Instantiates a Tree-Sitter Parser for Python using
+    the pypi-installed tree_sitter_python grammar.
     """
-    lang = Language(lib_path, language)
-    parser = Parser()
-    parser.set_language(lang)
+    lang = Language(tspython.language())
+    parser = Parser(lang)
     return parser
 
 def parse_code_to_ast(code:str, parser: Parser):
     # strip comments, alreafy done in vudenc, this is just a failsafe
-    clean_code = remove_comments_and_docstrings(code)
+    clean_code = remove_comments_and_docstrings(code, "python")
     # feed into tree-sitter
     tree = parser.parse(bytes(clean_code, "utf-8"))
     # return the root
     return tree.root_node
 
-def compute_token_maps(code: str, root_node) -> dict[tuple[int, int], tuple[int, str]]:
-    clean_code = remove_comments_and_docstrings(code)
-    raw_index = tree_to_token_index(root_node, clean_code)
+def compute_token_maps(code: str, root_node) -> Dict[Tuple[Point, Point], Tuple[int, str]]:
+    # break into lines so index_to_code_token can slice correctly
+    code_lines = code.splitlines()
 
-    index_to_code = {}
-    for (start_pt, end_pt), idx in raw_index.items():
-        token_str = index_to_code_token(start_pt, end_pt, clean_code)
-        index_to_code[(start_pt, end_pt)] = (idx, token_str)
+    # get back a dict: token_id -> (start_point, end_point)
+    raw_index = tree_to_token_index(root_node)
+
+    # build the reverse map: span -> (token_id, token_str)
+    index_to_code: dict[tuple[tuple[int,int],tuple[int,int]], tuple[int,str]] = {}
+    for token_id, span in enumerate(raw_index):
+        start_pt, end_pt = span
+        token_str = index_to_code_token(span, code_lines)
+        index_to_code[span] = (token_id, token_str)
 
     return index_to_code
 
@@ -88,7 +89,7 @@ def main():
     
     # Setup
     tokenizer = init_tokenizer()
-    parser = init_dfg_parser(str(LANG_SO), "python")
+    parser = init_dfg_parser()
 
     # Stream the .jsonl and iterate through each block
     def gen():
@@ -99,20 +100,34 @@ def main():
 
             # Tokenize code (only get offsets)
             offsets = tokenize_code(rec["code"], tokenizer=tokenizer)
-            rec["offset_mapping"] = offsets.tolist()
+            rec["offset_mapping"] = offsets
 
             # Generate AST + token map
             root = parse_code_to_ast(rec["code"], parser)
             index_map = compute_token_maps(rec["code"], root)
 
-            # DFG extraction
-            nodes, _ = DFG_Python(root, index_map, {})
-            rec["graph_nodes"] = nodes
-            rec["graph_edges"] = [
+            print("TOKENS:")
+            for span, (tok_idx, tok_str) in sorted(index_map.items(), key=lambda x: x[1][0]):
+                print(f"  [{tok_idx:2d}] '{tok_str}' at lines {span}")
+
+            # run the extractor
+            nodes, _ = DFG_python(root, index_map, {})
+
+            # compute edges
+            edges = [
                 (src, dst)
                 for (_, dst, _, _, src_idxs) in nodes
                 for src in src_idxs
-            ]
+        ]
+
+            # TESTING
+            print("TOKENS:", sorted(index_map.items(), key=lambda x: x[1][0]))
+            print("NODES:", nodes)
+            print("EDGES:", edges)
+
+            # 4) attach and yield
+            rec["graph_nodes"] = nodes
+            rec["graph_edges"] = edges
             yield rec
 
     write_jsonl(gen(), out_path)
