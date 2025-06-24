@@ -15,7 +15,7 @@ datasets/raw/*.jsonl
 datasets/csn/csn_negatives.jsonl
 
 # GRAPH-CREATED DATA
-datasets/vudenc/prepared/** */
+datasets/vudenc/prepared/**
 !datasets/vudenc/prepared/**/      
 !datasets/vudenc/prepared/.gitkeep 
 
