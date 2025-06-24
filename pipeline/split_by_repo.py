@@ -12,7 +12,7 @@ Date: 17/06/2025
 """
 
 import json, random, argparse
-from collections import defaultdict
+from collections import defaultdict, Counter
 from pathlib import Path
 
 def count_repo_stats(input_path: Path) -> defaultdict:
@@ -35,64 +35,99 @@ def count_repo_stats(input_path: Path) -> defaultdict:
             s["pos"] += rec["label"]
     return stats
 
-def assign_label_balanced(repo_stats: defaultdict, train_frac: float, val_frac: float, seed: int) -> set:
-    """
-    Greedy assignment of repos to splits, minimizing squared error
-    against target fractions for both total and positive counts.
+# def assign_label_balanced(repo_stats: defaultdict, train_frac: float, val_frac: float, seed: int) -> set:
+#     """
+#     Greedy assignment of repos to train/val/test to match total + label proportions.
+#     Prioritizes total count matching to avoid under-allocation (e.g., empty train set).
 
-    Logic:
-        1. Compute global totals: G_total, G_pos
-        2. Derive numeric targets per split (train/val/test) based on fractions
-        3. Shuffle repo list for randomness + reproducibility
-        4. For each repo, avalute which split would yield the smallest squard-error in (total, target) and (pos, target)
-        5. Assign the repo to that best split and update running sums (acc)
+#     Returns:
+#         repo2split: {repo_url: "train"|"val"|"test"}
+#     """
+#     # compute global targets
+#     G_total = sum(s["total"] for s in repo_stats.values())
+#     G_pos = sum(s["pos"] for s in repo_stats.values())
 
-    Returns:
-        repo2split: {repo_url: "train"|"val"|"test"}
-    """
-    # compute global targets
-    G_total = sum(s["total"] for s in repo_stats.values())
-    G_pos = sum(s["pos"] for s in repo_stats.values())
+#     # define fractions for all 3 splits
+#     test_frac = 1.0-train_frac-val_frac
 
-    # define fractions for all 3 splits
-    test_frac = 1.0-train_frac-val_frac
+#     # compute targets for each split
+#     targets = {
+#         "train": {"total": train_frac * G_total, "pos": train_frac * G_pos},
+#         "val": {"total": val_frac * G_total, "pos": val_frac * G_pos},
+#         "test": {"total": test_frac * G_total,"pos": test_frac * G_pos}
+#     }
 
-    # compute targets for each split
-    targets = {
-        "train": {"total": train_frac * G_total, "pos": train_frac * G_pos},
-        "val": {"total": val_frac * G_total, "pos": val_frac * G_pos},
-        "test": {"total": test_frac * G_total,"pos": test_frac * G_pos}
-    }
+#     # running accumulators for each split
+#     acc = {split: {"total": 0, "pos": 0} for split in targets}
 
-    # running accumulators for each split
-    acc = {split: {"total": 0, "pos": 0} for split in targets}
+#     # shuffle repos
+#     items = list(repo_stats.items()) # [(repo_url), {total, pos}), ...]
+#     random.Random(seed).shuffle(items)
 
-    # shuffle repos
-    items = list(repo_stats.items()) # [(repo_url), {total, pos}), ...]
+#     repo2split = {}
+#     # assign each repo in turn
+#     for repo, s in items:
+#         best_split, best_err = None, float("inf")
+#         # consider each split for this repo
+#         for split, tgt in targets.items():
+#             # hypothetical new totals
+#             new_tot = acc[split]["total"] + s["total"]
+#             new_pos = acc[split]["pos"] + s["pos"]
+#             # compute squared error against target
+#             dt = new_tot - tgt["total"]
+#             dp = new_pos - tgt["pos"]
+#             err = dt*dt + dp*dp
+#             if err < best_err:
+#                 best_err, best_split = err, split
+#         repo2split[repo] = best_split
+
+#         # update accumulators
+#         acc[best_split]["total"] += s["total"]
+#         acc[best_split]["pos"]   += s["pos"]
+
+#     return repo2split
+
+def assign_label_balanced(repo_stats: defaultdict, train_frac: float, val_frac: float, seed: int, input_path: Path) -> dict:
+    items = list(repo_stats.items())
     random.Random(seed).shuffle(items)
 
-    repo2split = {}
-    # assign each repo in turn
-    for repo, s in items:
-        best_split, best_err = None, float("inf")
-        # consider each split for this repo
-        for split, tgt in targets.items():
-            # hypothetical new totals
-            new_tot = acc[split]["total"] + s["total"]
-            new_pos = acc[split]["pos"] + s["pos"]
-            # compute squared error against target
-            dt = new_tot - tgt["total"]
-            dp = new_pos - tgt["pos"]
-            err = dt*dt + dp*dp
-            if err < best_err:
-                best_err, best_split = err, split
-        repo2split[repo] = best_split
+    total_repos = len(items)
+    n_train = int(train_frac * total_repos)
+    n_val = int(val_frac * total_repos)
 
-        # update accumulators
-        acc[best_split]["total"] += s["total"]
-        acc[best_split]["pos"]   += s["pos"]
+    train_items = items[:n_train]
+    val_items = items[n_train:n_train + n_val]
+    test_items = items[n_train + n_val:]
+
+    repo2split = {}
+    acc = {"train": {"total": 0, "pos": 0}, "val": {"total": 0, "pos": 0}, "test": {"total": 0, "pos": 0}}
+
+    for repo, stats in train_items:
+        repo2split[repo] = "train"
+        acc["train"]["total"] += stats["total"]
+        acc["train"]["pos"] += stats["pos"]
+
+    for repo, stats in val_items:
+        repo2split[repo] = "val"
+        acc["val"]["total"] += stats["total"]
+        acc["val"]["pos"] += stats["pos"]
+
+    for repo, stats in test_items:
+        repo2split[repo] = "test"
+        acc["test"]["total"] += stats["total"]
+        acc["test"]["pos"] += stats["pos"]
+
+    print(f"[SUMMARY] {input_path.name}:")
+    for split in ("train", "val", "test"):
+        total = acc[split]["total"]
+        pos = acc[split]["pos"]
+        neg = total - pos
+        pct = 100 * pos / total if total else 0
+        print(f"  {split:<5} total={total:6d}  pos={pos:6d} ({pct:.1f}%)  neg={neg:6d}")
 
     return repo2split
+
+
 
 def split_records(input_path: Path, repo2split: dict, out_dir: Path) -> None:
     """
@@ -110,7 +145,9 @@ def split_records(input_path: Path, repo2split: dict, out_dir: Path) -> None:
     
     # build the writers
     writers = {}
+    missing = set()
     for split in ("train", "val", "test"):
+
         fn = out_dir / f"{vuln}_{split}.jsonl"
         print(f"[DEBUG] opening split {split} -> {fn}")
         writers[split] = open(fn, "w")
@@ -151,13 +188,18 @@ def main():
         repo_stats,
         args.train_frac,
         args.val_frac,
-        args.seed
+        args.seed,
+        Path(args.input)
     )
+
+    print(Counter(repo2split.values()))
 
     # dump records into split files
     split_records(Path(args.input), repo2split, Path(args.out_dir))
 
     print(f"Done! Wrote train/val/test to {args.out_dir}")
+
+    
 
 if __name__ == "__main__":
     main()
