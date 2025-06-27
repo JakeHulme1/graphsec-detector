@@ -19,6 +19,9 @@ datasets/vudenc/prepared/**
 !datasets/vudenc/prepared/**/      
 !datasets/vudenc/prepared/.gitkeep 
 
+# LOGS
+logs/
+
 #  PYTHON / BUILD ARTIFACTS
 __pycache__/
 *.py[cod]
