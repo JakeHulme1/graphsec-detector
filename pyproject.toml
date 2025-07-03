@@ -6,12 +6,13 @@ authors = ["Jake Hulme"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.10,<3.12"
 numpy = "^1.26"
 requests = "^2.32.4"
 urllib3 = "^2.5.0"
 transformers = "^4.52.4"
 tree-sitter-python = "^0.23.6"
+scikit-learn = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
