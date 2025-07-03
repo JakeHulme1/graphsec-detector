@@ -10,6 +10,11 @@ datasets/vudenc/processed/**
 !datasets/vudenc/processed/**/      
 !datasets/vudenc/processed/.gitkeep 
 
+#  SPLITS
+datasets/vudenc/splits/**       
+!datasets/vudenc/splits/**/      
+!datasets/vudenc/splits/.gitkeep 
+
 #  OTHER LARGE / ONE-OFF DUMPS
 datasets/raw/*.jsonl
 datasets/csn/csn_negatives.jsonl
