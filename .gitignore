@@ -38,3 +38,6 @@ __pycache__/
 
 # IGNORE VIRTUAL ENVIRONMENT
 .venv/
+venv/
+.env/
+env/

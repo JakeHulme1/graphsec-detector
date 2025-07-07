@@ -128,4 +128,70 @@ def train():
         # --- train set metrcis ---
         classifier.eval()
         all_logits, all_labels = [], []
-        with torch.no_grad()
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = {k: v.to(device) for k, v in batch.items()}
+                out = classifier(**batch)
+                running_val_loss += out.loss.item()
+                all_logits.append(out.logits)
+                all_labels.append(batch["labels"])
+        train_logits = torch.cat(all_logits, dim=0)
+        train_labels = torch.cat(all_labels, dim=0)
+        train_metrics = compute_metrics(train_logits, train_labels)
+        for name, val in train_metrics.items():
+            histories[f"train_{name}"].append(val)
+
+        # --- validation set metrics ---
+        running_val_loss = 0.0
+        all_logits, all_labels = [], []
+        with torch.no_grad():
+            for batch in val_loader:
+                batch = {k: v.to(device) for k, v in batch.items()}
+                out = classifier(**batch)
+                running_val_loss += out.loss.item()
+                all_logits.append(out.logits)
+                all_labels.append(batch["labels"])
+        avg_val_loss = running_val_loss / len(val_loader)
+        histories["val_loss"].append(avg_val_loss)
+
+        val_logits = torch.cat(all_logits, dim=0)
+        val_labels = torch.cat(all_labels, dim=0)
+        val_metrics = compute_metrics(val_logits, val_labels)
+        for name, val in val_metrics.items():
+            histories[f"val_{name}"].append(val)
+
+        # save best model by ROC-AUC
+        if val_metrics["roc_auc"] > best_val_roc:
+            best_val_roc = val_metrics["roc_auc"]
+            torch.save(
+                classifier.state_dict(),
+                os.path.join(train_cfg["output_dir"], "best.pt")
+            )
+
+        print(f"Epoch {epoch:2d} | "
+            f"train_loss={avg_train_loss:.4f} val_loss={avg_val_loss: .4f} "
+            f"val_roc_auc={val_metrics['roc_auc']:.4f}")
+        
+    # --- PLOT ALL CURVES ---
+    plot_training(
+        histories,
+        os.path.join(train_cfg["output_dir"], "training_plot.png")
+    )
+
+    # --- FINAL TEST SET EVALUATION ---
+    classifier.load_state_dict(torch.load(os.path.join(train_cfg["output_dir"], "best.pt")))
+    classifier.eval()
+    all_logits, all_labels = [], []
+    with torch.no_grad():
+        for batch in test_loader:
+            batch = {k: v.to(device) for k, v in batch.items()}
+            out = classifier(**batch)
+            all_logits.append(out.logits)
+            all_labels.append(batch["labels"])
+    test_logits = torch.cat(all_logits, dim=0)
+    test_labels = torch.cat(all_labels, dim=0)
+    test_metrics = compute_metrics(test_logits, test_labels)
+    print("Test metrics:", test_metrics)
+
+if __name__ == "__main__":
+    train()
