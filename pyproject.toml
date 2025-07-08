@@ -1,30 +1,29 @@
-[project]
-name            = "graphsec-detector"
-version         = "0.1.0"
-description     = ""
-readme          = "README.md"
-requires-python = ">=3.10,<3.12"
-authors         = [{ name = "joh46", email = "joh46@bath.ac.uk" }]
-
-dependencies = [
-  "numpy>=1.26,<2.0",
-  "requests>=2.32.4,<3.0",
-  "urllib3>=2.5.0,<3.0",
-  "transformers>=4.52.4,<5.0",
-  "tree-sitter-python>=0.23.6,<1.0",
-  "scikit-learn>=1.7.0,<2.0",
-  # torch & torchvision moved below
+[tool.poetry]
+name = "graphsec-detector"
+version = "0.1.0"
+description = ""
+authors = ["joh46 <joh46@bath.ac.uk>"]
+readme = "README.md"
+packages = [
+  { include = "data", from = "src" },
+  { include = "models", from = "src" }
 ]
 
-[project.optional-dependencies]
-gpu = [
-  "torch>=2.0.0,<3.0.0",
-  "torchvision>=0.19.0,<0.20.0",
-]
-dev = [
-  "ipykernel>=6.29.5"
-]
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+numpy = "^1.26"
+requests = "^2.32.4"
+urllib3 = "^2.5.0"
+transformers = "^4.52.4"
+tree-sitter-python = "^0.23.6"
+scikit-learn = "^1.7.0"
+
+[tool.poetry.group.gpu.dependencies]
+torch = "^2.6.0"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
 
 [build-system]
-requires    = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
