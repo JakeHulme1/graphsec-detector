@@ -7,6 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from transformers import AdamW, get_linear_schedule_with_warmup
 from types import SimpleNamespace
+from torch.utils.tensorboard import SummaryWriter
 
 from data.dataset import VulnerabilityDataset
 from models.graphcodebert_cls import GCBertClassifier
@@ -37,6 +38,9 @@ def train():
 
     # make sure output dir exists
     os.makedirs(train_cfg["output_dir"], exist_ok=True)
+
+    # tensorboard writer
+    writer = SummaryWriter(log_dir=train_cfg["output_dir"])
 
     #  --- DATASET AND DATALOADER ---
     ROOT = os.getcwd()
@@ -72,8 +76,7 @@ def train():
     
     # --- MODEL, OPTIMISER, SCHEDULER ---
     # load model
-    classifier = GCBertClassifier(model_cfg).model.to(train_cfg.device)
-    
+    classifier = GCBertClassifier(model_cfg).to(device)
     # separate parameters for decay
     no_decay = ["bias", "LayerNorm.weight"] # very sensitive parameters
     optim_groups = [
@@ -129,7 +132,7 @@ def train():
         classifier.eval()
         all_logits, all_labels = [], []
         with torch.no_grad():
-            for batch in val_loader:
+            for batch in train_loader:
                 batch = {k: v.to(device) for k, v in batch.items()}
                 out = classifier(**batch)
                 running_val_loss += out.loss.item()
@@ -172,6 +175,18 @@ def train():
             f"train_loss={avg_train_loss:.4f} val_loss={avg_val_loss: .4f} "
             f"val_roc_auc={val_metrics['roc_auc']:.4f}")
         
+
+        writer.add_scalar("Loss/train", avg_train_loss, epoch)
+        writer.add_scalar("Loss/val", avg_val_loss, epoch)
+        writer.add_scalar("ROC_AUC/val", val_metrics["roc_auc"], epoch)
+
+        # Log all metrics
+        for name, val in train_metrics.items():
+            writer.add_scalar(f"Metric/train/{name}", val, epoch)
+        for name, val in val_metrics.items():
+            writer.add_scalar(f"Metric/val/{name}", val, epoch)
+
+
     # --- PLOT ALL CURVES ---
     plot_training(
         histories,
@@ -192,6 +207,8 @@ def train():
     test_labels = torch.cat(all_labels, dim=0)
     test_metrics = compute_metrics(test_logits, test_labels)
     print("Test metrics:", test_metrics)
+
+    writer.close()
 
 if __name__ == "__main__":
     train()
