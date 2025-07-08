@@ -1,5 +1,5 @@
 import json
-from types import SimpleNameSpace
+from types import SimpleNamespace
 from data.dataset import VulnerabilityDataset
 from models.graphcodebert_cls import GCBertClassifier
 import torch
@@ -8,10 +8,10 @@ import torch
 with open("config/model_config.json") as f:
     cfg_dict = json.load(f)
 cfg_dict["device"] = "cpu"  # test on CPU
-cfg = SimpleNameSpace(**cfg_dict)
+cfg = SimpleNamespace(**cfg_dict)
 
 # Load dataset
-ds = VulnerabilityDataset("datasets/vudenc/prepared/sql_injection/train.jsonl",
+ds = VulnerabilityDataset("datasets/vudenc/prepared/command_injection/train.jsonl",
                           max_seq_len=cfg.max_seq_length,
                           max_nodes=cfg.max_nodes)
 
