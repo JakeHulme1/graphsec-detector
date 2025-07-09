@@ -31,4 +31,4 @@ RUN poetry install --no-interaction --no-ansi --with gpu --no-root
 COPY . .
 
 # Default command: launch TensorBoard on 6006 and then train
-CMD ["bash","-lc","poetry run tensorboard --logdir=outputs --port=6006 & poetry run python -m models.train"]
+CMD ["bash","-lc","poetry run tensorboard --logdir=outputs --port=6006 & poetry run python src/models/train.py"]
