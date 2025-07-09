@@ -1,18 +1,20 @@
 FROM nvidia/cuda:11.7.1-devel-ubuntu22.04
-
-# Set up a WORKDIR
 WORKDIR /app
 
+# avoid any interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install python3, pip, venv, git (for submodules)
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
       python3 \
       python3-pip \
       python3-venv \
       git \
-      nano \
-    && ln -s /usr/bin/python3 /usr/bin/python \
-    && ln -s /usr/bin/pip3   /usr/bin/pip \
-    && rm -rf /var/lib/apt/lists/*
+      nano && \
+    ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3   /usr/bin/pip && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Poetry globally (no cache)
 ENV POETRY_VERSION=2.1.3 \
