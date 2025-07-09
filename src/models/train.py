@@ -5,7 +5,8 @@ import torch
 import random
 import numpy as np
 from torch.utils.data import DataLoader
-from transformers import AdamW, get_linear_schedule_with_warmup
+from torch.optim import AdamW
+from transformers import get_linear_schedule_with_warmup
 from types import SimpleNamespace
 from torch.utils.tensorboard import SummaryWriter
 
@@ -21,6 +22,41 @@ def set_seed(seed: int):
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
 
+def collate_fn(batch):
+    # stack the code‐only things
+    input_ids      = torch.stack([ex["input_ids"]      for ex in batch], dim=0) # [B, C]
+    attention_mask = torch.stack([ex["attention_mask"] for ex in batch], dim=0) # [B, C]
+    labels         = torch.stack([ex["labels"]         for ex in batch], dim=0) # [B]
+
+    # stack the graph‐node things
+    node_type_ids = torch.stack([ex["node_type_ids"] for ex in batch], dim=0) # [B, N]
+    node_mask     = torch.stack([ex["node_mask"]     for ex in batch], dim=0) # [B, N]
+
+    # expand input_ids and attention_mask to hold the nodes
+    # just 0‐pad the new token IDs, and use the node_mask as their attention_mask
+    pad_ids       = torch.zeros_like(node_type_ids)    # [B, N]
+    pad_mask      = node_mask                          # [B, N]
+
+    full_input_ids      = torch.cat([input_ids, pad_ids],     dim=1)  # [B, C+N]
+    full_attention_mask = torch.cat([attention_mask,pad_mask],   dim=1)  # [B, C+N]
+
+    # build a position_idx that gives us:
+    #  tokens => 2, pads => 1, nodes => 0
+    tok_pos       = torch.full_like(attention_mask, 2)   # [B, C]
+    pad_pos       = torch.full_like(pad_mask,       1)   # [B, N]
+    full_position_idx = torch.cat([tok_pos, pad_pos], dim=1)  # [B, C+N]
+
+    return {
+      "input_ids": full_input_ids,
+      "attention_mask": full_attention_mask,
+      "position_idx": full_position_idx,
+      "node_type_ids": node_type_ids,
+      "node_mask": node_mask,
+      "labels": labels,
+    }
+
+    
+
 def train():
     # --- CONFIGURATIONS ---
     # model config
@@ -31,6 +67,13 @@ def train():
     # training cofig
     with open("config/train_config.yaml") as f:
         train_cfg = yaml.safe_load(f)
+    # force to float/int as yaml safe load was parsing as strings
+    train_cfg["learning_rate"] = float(train_cfg["learning_rate"])
+    train_cfg["weight_decay"]  = float(train_cfg["weight_decay"])
+    train_cfg["warmup_steps"]  = int(train_cfg["warmup_steps"])
+    train_cfg["batch_size"]    = int(train_cfg["batch_size"])
+    train_cfg["epochs"]        = int(train_cfg["epochs"])
+    train_cfg["grad_accum_steps"] = int(train_cfg["grad_accum_steps"])
 
     # set seed & device
     set_seed(train_cfg.get("seed", 42))
@@ -43,7 +86,9 @@ def train():
     writer = SummaryWriter(log_dir=train_cfg["output_dir"])
 
     #  --- DATASET AND DATALOADER ---
-    ROOT = os.getcwd()
+    ROOT = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "..")
+    )
     ds_name = train_cfg["dataset_name"]
     base = os.path.join(ROOT, "datasets", "vudenc", "prepared", ds_name)
 
@@ -54,6 +99,9 @@ def train():
     train_ds = VulnerabilityDataset(train_path,
                                     max_seq_len=model_cfg.max_seq_length,
                                     max_nodes=model_cfg.max_nodes)
+    if len(train_ds) == 0:
+        raise RuntimeError(f"Found 0 records in {train_path!r}.  "
+                       f"Check that this file exists and is non-empty.")
     val_ds = VulnerabilityDataset(val_path,
                                   max_seq_len=model_cfg.max_seq_length,
                                 max_nodes=model_cfg.max_nodes)
@@ -64,15 +112,18 @@ def train():
     train_loader = DataLoader(train_ds,
                               batch_size=train_cfg["batch_size"],
                               shuffle=True,
-                              num_workers=train_cfg.get("num_workers", 4))
+                              num_workers=train_cfg.get("num_workers", 4),
+                              collate_fn=collate_fn)
     val_loader = DataLoader(val_ds,
                             batch_size=train_cfg["batch_size"],
                             shuffle=False,
-                            num_workers=train_cfg.get("num_workers", 4))
+                            num_workers=train_cfg.get("num_workers", 4),
+                            collate_fn=collate_fn)
     test_loader = DataLoader(test_ds,
                              batch_size=train_cfg["batch_size"],
                              shuffle=False,
-                             num_workers=train_cfg.get("num_workers", 4))
+                             num_workers=train_cfg.get("num_workers", 4),
+                             collate_fn=collate_fn)
     
     # --- MODEL, OPTIMISER, SCHEDULER ---
     # load model
@@ -82,14 +133,14 @@ def train():
     optim_groups = [
         {
             "params": [p for n, p in classifier.named_parameters() if not any(nd in n for nd in no_decay)],
-            "weight_decay": train_cfg.weight_decay
+            "weight_decay": train_cfg["weight_decay"]
         },
         {
             "params": [p for n,p in classifier.named_parameters() if any(nd in n for nd in no_decay)],
             "weight_decay": 0.0
         },
     ]
-    optimizer = AdamW(optim_groups, lr=train_cfg.learning_rate)
+    optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
 
     total_steps = len(train_loader) // train_cfg["grad_accum_steps"] * train_cfg["epochs"]
     scheduler = get_linear_schedule_with_warmup(
@@ -116,8 +167,22 @@ def train():
         running_loss = 0.0
         for step, batch in enumerate(train_loader, start=1):
             batch = {k: v.to(device) for k, v in batch.items()}
-            out = classifier(**batch)
-            loss = out.loss / train_cfg["grad_accum_steps"]
+
+            # ─── ZERO‐PAD THE GRAPH‐NODE PART TO MATCH ATTENTION_MASK
+            bs, L = batch["attention_mask"].shape     # e.g. [B, 384]
+            _,  N = batch["node_mask"].shape          # e.g. [B, 16]
+            if N != L:
+                pad_mask = torch.zeros(bs, L-N,
+                    device=batch["node_mask"].device,
+                    dtype=batch["node_mask"].dtype)
+                batch["node_mask"]     = torch.cat([batch["node_mask"],     pad_mask], dim=1)
+                pad_type = torch.zeros(bs, L-N,
+                    device=batch["node_type_ids"].device,
+                    dtype=batch["node_type_ids"].dtype)
+                batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
+            
+            loss, _ = classifier(**batch)
+            loss = loss / train_cfg["grad_accum_steps"]
             loss.backward()
             running_loss += loss.item()
 
@@ -129,14 +194,29 @@ def train():
         histories["train_loss"].append(avg_train_loss)
 
         # --- train set metrcis ---
+        running_train_loss = 0.0
         classifier.eval()
         all_logits, all_labels = [], []
         with torch.no_grad():
             for batch in train_loader:
                 batch = {k: v.to(device) for k, v in batch.items()}
-                out = classifier(**batch)
-                running_val_loss += out.loss.item()
-                all_logits.append(out.logits)
+
+                bs, L = batch["attention_mask"].shape
+                _,  N = batch["node_mask"].shape
+                if N != L:
+                    pad_mask = torch.zeros(bs, L-N,
+                        device=batch["node_mask"].device,
+                        dtype=batch["node_mask"].dtype)
+                    batch["node_mask"]     = torch.cat([batch["node_mask"],     pad_mask], dim=1)
+                    pad_type = torch.zeros(bs, L-N,
+                        device=batch["node_type_ids"].device,
+                        dtype=batch["node_type_ids"].dtype)
+                    batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
+
+                
+                loss, logits = classifier(**batch)
+                running_train_loss += loss.item()
+                all_logits.append(logits)
                 all_labels.append(batch["labels"])
         train_logits = torch.cat(all_logits, dim=0)
         train_labels = torch.cat(all_labels, dim=0)
@@ -150,9 +230,23 @@ def train():
         with torch.no_grad():
             for batch in val_loader:
                 batch = {k: v.to(device) for k, v in batch.items()}
-                out = classifier(**batch)
-                running_val_loss += out.loss.item()
-                all_logits.append(out.logits)
+
+                bs, L = batch["attention_mask"].shape
+                _,  N = batch["node_mask"].shape
+                if N != L:
+                    pad_mask = torch.zeros(bs, L-N,
+                        device=batch["node_mask"].device,
+                        dtype=batch["node_mask"].dtype)
+                    batch["node_mask"]     = torch.cat([batch["node_mask"],     pad_mask], dim=1)
+                    pad_type = torch.zeros(bs, L-N,
+                        device=batch["node_type_ids"].device,
+                        dtype=batch["node_type_ids"].dtype)
+                    batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
+
+
+                loss, logits = classifier(**batch)
+                running_val_loss += loss.item()
+                all_logits.append(logits)
                 all_labels.append(batch["labels"])
         avg_val_loss = running_val_loss / len(val_loader)
         histories["val_loss"].append(avg_val_loss)
@@ -200,8 +294,21 @@ def train():
     with torch.no_grad():
         for batch in test_loader:
             batch = {k: v.to(device) for k, v in batch.items()}
-            out = classifier(**batch)
-            all_logits.append(out.logits)
+
+            bs, L = batch["attention_mask"].shape
+            _,  N = batch["node_mask"].shape
+            if N != L:
+                pad_mask = torch.zeros(bs, L-N,
+                    device=batch["node_mask"].device,
+                    dtype=batch["node_mask"].dtype)
+                batch["node_mask"]     = torch.cat([batch["node_mask"],     pad_mask], dim=1)
+                pad_type = torch.zeros(bs, L-N,
+                    device=batch["node_type_ids"].device,
+                    dtype=batch["node_type_ids"].dtype)
+                batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
+
+            _, logits = classifier(**batch)
+            all_logits.append(logits)
             all_labels.append(batch["labels"])
     test_logits = torch.cat(all_logits, dim=0)
     test_labels = torch.cat(all_labels, dim=0)

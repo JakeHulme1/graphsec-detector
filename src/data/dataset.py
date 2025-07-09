@@ -58,7 +58,7 @@ class VulnerabilityDataset(Dataset):
         if edges:
             edge_index = torch.tensor(edges, dtype=torch.long).t()  # (2, E)
         else:
-            edge_index = torch.zeros((2, 0), dtype=torch.long)
+            edge_index = torch.empty((2, 0), dtype=torch.long)
 
         #  4. Label
         label = torch.tensor(rec["label"], dtype=torch.long)
