@@ -1,6 +1,8 @@
 FROM nvidia/cuda:11.7.1-devel-ubuntu22.04
 WORKDIR /app
 
+ENV PYTHONPATH=/app/src
+
 # avoid any interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
