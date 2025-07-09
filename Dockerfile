@@ -14,4 +14,4 @@ RUN poetry config virtualenvs.create false && poetry install --no-interaction --
 
 COPY . .
 
-CMD ["bash", "-c", "poetry run tensorboard --logdir=outputs --port=6006 & poetry run python train.py"]
+CMD ["bash", "-c", "poetry run tensorboard --logdir=outputs --port=6006 & poetry run python -m models.train"]
