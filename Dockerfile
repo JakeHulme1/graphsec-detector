@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
 
 # Copy in just the metadata & install dependencies
 COPY pyproject.toml poetry.lock* ./
-RUN poetry install --no-interaction --no-ansi --with-GPU
+RUN poetry install --no-interaction --no-ansi --with gpu
 
 # Bring in full project
 COPY . .
