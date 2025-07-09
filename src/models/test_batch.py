@@ -26,7 +26,11 @@ model.eval()
 # Forward pass
 with torch.no_grad():
     output = model(**batch)
+    if isinstance(output, tuple):
+        loss, logits = output
+    else:
+        loss, logits = output.loss, output.logits
 
-print("Test batch passed ✅")
-print("Loss:", output.loss.item())
-print("Logits:", output.logits)
+print("Test batch passed!")
+print("Loss:", loss)
+print("Logits:", logits)

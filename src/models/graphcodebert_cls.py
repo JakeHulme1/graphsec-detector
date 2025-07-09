@@ -1,52 +1,87 @@
-from transformers import AutoConfig, AutoModelForSequenceClassification
+import os
+import sys
+import torch
+import torch.nn as nn
+from transformers import AutoConfig, AutoModel
 
-class GCBertClassifier:
+GRAPH_CODE_BERT_ROOT = os.path.abspath(os.path.join(__file__, "..", "..", "extern", "GraphCodeBERT"))
+if GRAPH_CODE_BERT_ROOT not in sys.path:
+    sys.path.insert(0, GRAPH_CODE_BERT_ROOT)
+
+from codesearch.model import Model as GraphCodeBERTEncoder
+
+class GCBertClassifier(nn.Module):
     """
-    Wrapper around HuggingFace's GraphCodeBERT model for sequence classification.
+    A classifier on top on the GrpahCodeBERT encoder in codesearch/model.py
     """
+
     def __init__(self, cfg):
-        """
-        Args:
-            cfg: configuration object or dict with arributes/keys:
-                - model_name_or_path (str): pretrained model identifier
-                - num_labels (int): number of output classes
-                - hidden_dropout_prob (float): dropout probability for hidden layers
-                - classifier_dropout (float): dropout for the classifier head
-        """
-        #  Load and adjust configuration
+        super().__init__()
+        self.cfg = cfg
+
+        # Load and override cofif from HuggingFace 
         config = AutoConfig.from_pretrained(
             cfg.model_name_or_path,
-            num_labels=cfg.num_labels,
-            hidden_dropout_prob=getattr(cfg, 'hidden_dropout_prob', None),
-            classifier_dropout=getattr(cfg, 'classifier_dropout', None),
+            hidden_dropout_prob=getattr(cfg, "hidden_dropout_prob", None),
+            classifier_dropout=getattr(cfg, "classifier_dropout", None),
         )
 
-        # INstantiate the model
-        self.model = AutoModelForSequenceClassification.from_pretrained(
+        # INstantiate the raw ROberta (GraphCodeBERT) encoder itself
+        # Use AutoModel here to get the base transformer, not a sequence classification head
+        hf_encoder = AutoModel.from_pretrained(
             cfg.model_name_or_path,
-            config=config)
-        
-    def forward(self, input_ids, attention_mask, node_type_ids=None, node_mask=None, edge_index=None, labels=None):
-        """
-        Forward pass for classification
-
-        Args:
-            - input_ids (LongTensor): token IDs [batch_size, seq_len]
-            - attention_mask (torch.LongTensor): attention mask, shape (batch_size, seq_len)
-            - node_type_ids (torch.LongTensor, optional): node type IDs, shape (batch_size, max_nodes)
-            - node_mask (torch.LongTensor, optional): node mask, shape (batch_size, max_nodes)
-            - edge_index (torch.LongTensor, optional): edge indices, shape (2, num_edges)
-            - labels (torch.LongTensor, optional): classification labels, shape (batch_size,)
-        
-        Returns:
-            transformers.modeling_outputs.SequenceClassifierOutput: containing loss and logits
-        """
-        outputs = self.model(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            node_type_ids=node_type_ids,
-            node_mask=node_mask,
-            edge_index=edge_index,
-            labels=labels,
+            config=config,
         )
-        return outputs
+
+        # Wrap it with the graph-aware embedding logic
+        self.encoder = GraphCodeBERTEncoder(hf_encoder)
+
+        # Dropout
+        self.dropout = nn.Dropout(config.classifier_dropout or config.hidden_dropout_prob or 0.1)
+
+        # Classification head: just a single layer from hidden_size -> num_labels
+        self.classifier = nn.Linear(config.hidden_size, cfg.num_labels)
+
+
+    def forward(self, **batch):
+        """
+        Accept the keys the prepared dataset produces:
+          input_ids, attention_mask,
+          node_type_ids, node_mask, edge_index, labels
+
+        Only need:
+          code_inputs=input_ids
+          attn_mask=attention_mask
+          position_idx=node_type_ids
+          labels=labels (optional)
+        """
+        # pull them out (will KeyError if something missing)
+        code_inputs     = batch["input_ids"]
+        attn_mask       = batch["attention_mask"]
+        labels          = batch.get("labels", None)
+
+        # Get position_idx if present, otherwise treat everything as token (no nodes)
+        if "position_idx" in batch:
+            position_idx = batch["position_idx"]
+        else:
+            position_idx = torch.full_like(code_inputs, 2)
+
+        # Run graph‐aware encoder -> pooled [batch, hidden_size]
+        pooled = self.encoder(
+            code_inputs=code_inputs,
+            attn_mask=attn_mask,
+            position_idx=position_idx,
+            nl_inputs=None,
+        )
+
+        # Dropout + linear -> logits
+        x = self.dropout(pooled)
+        logits = self.classifier(x)  # [batch, num_labels]
+
+        # Cross‐entropy loss
+        if labels is not None:
+            loss_fct = nn.CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
+            return loss, logits
+
+        return logits

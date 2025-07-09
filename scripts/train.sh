@@ -4,7 +4,7 @@ set -e # exit on error
 
 # --- config ---
 IMAGE_NAME="graphsec-detector"
-POETRY_VERSION="1.8.2"
+POETRY_VERSION="2.1.3"
 POETRY_EXTRAS="--with gpu"
 
 # clear outputs

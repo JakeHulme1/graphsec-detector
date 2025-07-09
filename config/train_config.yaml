@@ -1,0 +1,11 @@
+device: cuda
+seed: 42
+batch_size: 16
+epochs: 10
+learning_rate: 2e-5
+weight_decay: 0.01
+warmup_steps: 100
+grad_accum_steps: 2
+num_workers: 4
+output_dir: outputs/
+dataset_name: command_injection
