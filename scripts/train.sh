@@ -12,7 +12,7 @@ if [[ -d outputs ]]; then
 fi
 
 # update code
-echo "[*] Pulling latest changes…"
+echo "[*] Pulling latest changes from GitHub…"
 git pull --ff-only
 
 # build Docker image
