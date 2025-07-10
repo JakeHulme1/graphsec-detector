@@ -25,7 +25,7 @@ echo "[*] Docker image successfully built!"
 echo "[*] Running training inside Docker with Hare"
 hare run --rm --gpus device=3 \
   -v "$(pwd)":/app \
-  -v "$"{HOST_DATA}":/app/datasets/vudenc:ro \
+  -v "${HOST_DATA}":/app/datasets/vudenc:ro \
   -v "$HOME/output-graphsec":/app/outputs \
   -p 10006:6006 \
   "$IMAGE_NAME"
