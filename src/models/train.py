@@ -128,6 +128,13 @@ def train():
     # --- MODEL, OPTIMISER, SCHEDULER ---
     # load model
     classifier = GCBertClassifier(model_cfg).to(device)
+
+    # *************** DEBUGING ***************
+    for name, param in classifier.named_parameters():
+        print(f"{name}: requires_grad={param.requires_grad}")
+
+    # *************** DEBUGING ***************
+
     # separate parameters for decay
     no_decay = ["bias", "LayerNorm.weight"] # very sensitive parameters
     optim_groups = [
@@ -141,6 +148,13 @@ def train():
         },
     ]
     optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
+
+    # ******************** DEBUGGING **********************
+    # Sanity check 3: Ensure optimizer contains only parameters with gradients
+    for group in optimizer.param_groups:
+        for param in group['params']:
+            assert param.requires_grad, "Optimizer contains frozen parameters!"
+    # ******************** DEBUGGING **********************
 
     total_steps = len(train_loader) // train_cfg["grad_accum_steps"] * train_cfg["epochs"]
     scheduler = get_linear_schedule_with_warmup(
