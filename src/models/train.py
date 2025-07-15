@@ -255,7 +255,7 @@ def train():
         val_labels = torch.cat(all_labels, dim=0)
         val_metrics = compute_metrics(val_logits, val_labels)
 
-        # --- DEBUGING ---
+        # ************** DEBUGING **************
         import matplotlib.pyplot as plt
         import random
 
@@ -274,7 +274,7 @@ def train():
         indices = random.sample(range(len(probs)), 10)
         for idx in indices:
             print(f"Example {idx}: Prob={probs[idx]:.4f}, Label={val_labels[idx].item()}")
-        # --- DEBUGGING ---
+        # ************** DEBUGGING **************
 
 
         for name, val in val_metrics.items():
@@ -339,6 +339,44 @@ def train():
     print("Test metrics:", test_metrics)
 
     writer.close()
+
+    overfit_one_batch(classifier, train_loader, device)
+
+# ************** DEBUGING **************
+def overfit_one_batch(classifier, train_loader, device):
+    classifier.train()
+    batch = next(iter(train_loader))
+    batch = {k: v.to(device) for k, v in batch.items()}
+
+    optimizer = AdamW(classifier.parameters(), lr=1e-3)
+    loss_history = []
+
+    for i in range(100):
+        optimizer.zero_grad()
+
+        bs, L = batch["attention_mask"].shape
+        _, N = batch["node_mask"].shape
+        if N != L:
+            pad_mask = torch.zeros(bs, L - N,
+                                   device=batch["node_mask"].device,
+                                   dtype=batch["node_mask"].dtype)
+            batch["node_mask"] = torch.cat([batch["node_mask"], pad_mask], dim=1)
+            pad_type = torch.zeros(bs, L - N,
+                                   device=batch["node_type_ids"].device,
+                                   dtype=batch["node_type_ids"].dtype)
+            batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
+
+        loss, _ = classifier(**batch)
+        loss.backward()
+        optimizer.step()
+
+        loss_history.append(loss.item())
+        if i % 10 == 0:
+            print(f"Iteration {i}: Loss = {loss.item()}")
+
+    print(f"Final loss after 100 iterations: {loss_history[-1]}")
+
+# ************** DEBUGING **************
 
 if __name__ == "__main__":
     train()
