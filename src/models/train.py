@@ -254,6 +254,29 @@ def train():
         val_logits = torch.cat(all_logits, dim=0)
         val_labels = torch.cat(all_labels, dim=0)
         val_metrics = compute_metrics(val_logits, val_labels)
+
+        # --- DEBUGING ---
+        import matplotlib.pyplot as plt
+        import random
+
+        # Convert logits to probabilities
+        probs = torch.softmax(val_logits, dim=1)[:, 1].cpu().numpy()
+
+        # Plot histogram of predicted probabilities
+        plt.hist(probs, bins=20, range=(0, 1))
+        plt.title("Validation Set: Predicted Positive Class Probabilities")
+        plt.xlabel("Probability")
+        plt.ylabel("Count")
+        plt.savefig(os.path.join(train_cfg["output_dir"], f"val_prob_hist_epoch_{epoch}.png"))
+        plt.close()
+
+        # Print 10 random examples
+        indices = random.sample(range(len(probs)), 10)
+        for idx in indices:
+            print(f"Example {idx}: Prob={probs[idx]:.4f}, Label={val_labels[idx].item()}")
+        # --- DEBUGGING ---
+
+
         for name, val in val_metrics.items():
             histories[f"val_{name}"].append(val)
 
