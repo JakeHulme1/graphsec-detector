@@ -1,7 +1,7 @@
 device: cuda
 seed: 42
 batch_size: 16
-epochs: 10
+epochs: 1
 learning_rate: 2e-5
 weight_decay: 0.01
 warmup_steps: 100
