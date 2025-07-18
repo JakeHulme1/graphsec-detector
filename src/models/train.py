@@ -40,11 +40,23 @@ def collate_fn(batch):
     full_input_ids      = torch.cat([input_ids, pad_ids],     dim=1)  # [B, C+N]
     full_attention_mask = torch.cat([attention_mask,pad_mask],   dim=1)  # [B, C+N]
 
-    # build a position_idx that gives us:
-    #  tokens => 2, pads => 1, nodes => 0
-    tok_pos       = torch.full_like(attention_mask, 2)   # [B, C]
-    pad_pos       = torch.full_like(pad_mask,       1)   # [B, N]
-    full_position_idx = torch.cat([tok_pos, pad_pos], dim=1)  # [B, C+N]
+    # # build a position_idx that gives us:
+    # #  tokens => 2, pads => 1, nodes => 0
+    # tok_pos       = torch.full_like(attention_mask, 2)   # [B, C]
+    # pad_pos       = torch.full_like(pad_mask,       1)   # [B, N]
+    # full_position_idx = torch.cat([tok_pos, pad_pos], dim=1)  # [B, C+N]
+
+    # --- CHANGES ---
+    # build a position_idx vector compatible with GraphCodeBERT
+    bs, seq_len = input_ids.shape
+    tok_pos = torch.arrange(seq_len, device=input_ids.device)
+    tok_pos = tok_pos.unsqueeze(0).expand(bs, -1) + 2 # [B, C]
+    tok_pos = tok_pos * attention_mask + (1 - attention_mask)
+
+    node_pos = torch.zeros_like(node_mask) # [B, N]
+    node_pos[node_mask == 0] = 1
+
+    full_position_idx = torch.cat([tok_pos, node_pos], dim=1) # [B, C+N]
 
     return {
       "input_ids": full_input_ids,
