@@ -140,6 +140,12 @@ def train():
     val_labels = torch.cat([ex["labels"].unsqueeze(0) for ex in val_ds])
     test_labels = torch.cat([ex["labels"].unsqueeze(0) for ex in test_ds])
 
+    # Class weighted loss
+    num_pos = train_labels.sum().item()
+    num_neg = len(train_labels) - num_pos
+    class_weights = torch.tensor([1.0, num_neg / num_pos], device=device)
+    loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
+
     print(f"Train pos %: {100 * train_labels.sum().item() / len(train_labels):.2f}")
     print(f"Val pos %: {100 * val_labels.sum().item() / len(val_labels):.2f}")
     print(f"Test pos %: {100 * test_labels.sum().item() / len(test_labels):.2f}")
@@ -216,7 +222,8 @@ def train():
                     dtype=batch["node_type_ids"].dtype)
                 batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
             
-            loss, _ = classifier(**batch)
+            logits = classifier(**batch)
+            loss = loss_fn(logits.view(-1, logits.size(-1)), batch["labels"].view(-1))
             loss = loss / train_cfg["grad_accum_steps"]
             loss.backward()
             running_loss += loss.item()
@@ -249,7 +256,8 @@ def train():
                     batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
 
                 
-                loss, logits = classifier(**batch)
+                logits = classifier(**batch)
+                loss = loss_fn(logits.view(-1, logits.size(-1)), batch["labels"].view(-1))
                 running_train_loss += loss.item()
                 all_logits.append(logits)
                 all_labels.append(batch["labels"])
@@ -279,7 +287,8 @@ def train():
                     batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
 
 
-                loss, logits = classifier(**batch)
+                logits = classifier(**batch)
+                loss = loss_fn(logits.view(-1, logits.size(-1)), batch["labels"].view(-1))
                 running_val_loss += loss.item()
                 all_logits.append(logits)
                 all_labels.append(batch["labels"])
@@ -374,6 +383,7 @@ def train():
     classifier.load_state_dict(torch.load(os.path.join(train_cfg["output_dir"], "best.pt")))
     classifier.eval()
     all_logits, all_labels = [], []
+    running_test_loss = 0.0
     with torch.no_grad():
         for batch in test_loader:
             batch = {k: v.to(device) for k, v in batch.items()}
@@ -390,9 +400,16 @@ def train():
                     dtype=batch["node_type_ids"].dtype)
                 batch["node_type_ids"] = torch.cat([batch["node_type_ids"], pad_type], dim=1)
 
-            _, logits = classifier(**batch)
+            logits = classifier(**batch)
+            loss = loss_fn(logits.view(-1, logits.size(-1)), batch["labels"].view(-1))
+            running_test_loss += loss.item()
+
             all_logits.append(logits)
             all_labels.append(batch["labels"])
+
+    avg_test_loss = running_test_loss / len(test_loader)
+    print(f"Test loss: {avg_test_loss:.4f}")
+
     test_logits = torch.cat(all_logits, dim=0)
     test_labels = torch.cat(all_labels, dim=0)
     test_metrics = compute_metrics(test_logits, test_labels)

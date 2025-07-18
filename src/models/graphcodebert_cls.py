@@ -78,10 +78,10 @@ class GCBertClassifier(nn.Module):
         x = self.dropout(pooled)
         logits = self.classifier(x)  # [batch, num_labels]
 
-        # Cross‐entropy loss
-        if labels is not None:
-            loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
-            return loss, logits
+        # # Cross‐entropy loss
+        # if labels is not None:
+        #     loss_fct = nn.CrossEntropyLoss()
+        #     loss = loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
+        #     return loss, logits
 
         return logits
