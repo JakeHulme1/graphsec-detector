@@ -135,6 +135,12 @@ def train():
                              num_workers=train_cfg.get("num_workers", 4),
                              collate_fn=collate_fn)
     
+    # --- DEBUGGING ---
+    print(f"Train pos %: {100 * train_ds.labels.sum() / len(train_ds):.2f}")
+    print(f"Val pos %: {100 * val_ds.labels.sum() / len(val_ds):.2f}")
+    print(f"Test pos %: {100 * test_ds.labels.sum() / len(test_ds):.2f}")
+    # --- DEBUGGING ---
+    
     # --- MODEL, OPTIMISER, SCHEDULER ---
     # load model
     classifier = GCBertClassifier(model_cfg).to(device)
@@ -279,6 +285,25 @@ def train():
         val_logits = torch.cat(all_logits, dim=0)
         val_labels = torch.cat(all_labels, dim=0)
         val_metrics = compute_metrics(val_logits, val_labels)
+
+        # ************** DEBUGGING ***************
+        import random
+        import torch.nn.functional as F
+
+        # Convert logits to probabilities for positive class
+        probs = F.softmax(val_logits, dim=1)[:, 1].cpu().numpy()
+
+        # Sample 10 random indices
+        indices = random.sample(range(len(probs)), 10)
+
+        # Print logits and probabilities
+        for idx in indices:
+            logit = val_logits[idx]
+            prob = probs[idx]
+            label = val_labels[idx].item()
+            print(f"Example {idx}: Logits={logit.tolist()}, Prob(positive)={prob:.4f}, Label={label}")
+        # ************** DEBUGGING ***************
+
 
         # # ************** DEBUGING **************
         # import matplotlib.pyplot as plt
