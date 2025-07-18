@@ -136,9 +136,13 @@ def train():
                              collate_fn=collate_fn)
     
     # --- DEBUGGING ---
-    print(f"Train pos %: {100 * train_ds.labels.sum() / len(train_ds):.2f}")
-    print(f"Val pos %: {100 * val_ds.labels.sum() / len(val_ds):.2f}")
-    print(f"Test pos %: {100 * test_ds.labels.sum() / len(test_ds):.2f}")
+    train_labels = torch.cat([ex["labels"].unsqueeze(0) for ex in train_ds])
+    val_labels = torch.cat([ex["labels"].unsqueeze(0) for ex in val_ds])
+    test_labels = torch.cat([ex["labels"].unsqueeze(0) for ex in test_ds])
+
+    print(f"Train pos %: {100 * train_labels.sum().item() / len(train_labels):.2f}")
+    print(f"Val pos %: {100 * val_labels.sum().item() / len(val_labels):.2f}")
+    print(f"Test pos %: {100 * test_labels.sum().item() / len(test_labels):.2f}")
     # --- DEBUGGING ---
     
     # --- MODEL, OPTIMISER, SCHEDULER ---
