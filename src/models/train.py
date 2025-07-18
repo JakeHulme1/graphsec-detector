@@ -139,11 +139,11 @@ def train():
     # load model
     classifier = GCBertClassifier(model_cfg).to(device)
 
-    # *************** DEBUGING ***************
-    for name, param in classifier.named_parameters():
-        print(f"{name}: requires_grad={param.requires_grad}")
+    # # *************** DEBUGING ***************
+    # for name, param in classifier.named_parameters():
+    #     print(f"{name}: requires_grad={param.requires_grad}")
 
-    # *************** DEBUGING ***************
+    # # *************** DEBUGING ***************
 
     # separate parameters for decay
     no_decay = ["bias", "LayerNorm.weight"] # very sensitive parameters
@@ -183,6 +183,7 @@ def train():
         **{f"val_{m}": [] for m in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]},
     }
     best_val_roc = -float("inf")
+    early_stop_counter = 0
 
     # --- EPOCH LOOP ---
     for epoch in range(1, train_cfg["epochs"] + 1):
@@ -311,6 +312,12 @@ def train():
                 classifier.state_dict(),
                 os.path.join(train_cfg["output_dir"], "best.pt")
             )
+        else:
+            early_stop_counter += 1
+
+        if early_stop_counter >= 3:
+            print(f"Early stopping at epoch {epoch} - no improvement in val_roc_auc for 3 epochs.")
+            break
 
         print(f"Epoch {epoch:2d} | "
             f"train_loss={avg_train_loss:.4f} val_loss={avg_val_loss: .4f} "
