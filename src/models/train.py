@@ -412,6 +412,47 @@ def train():
 
     test_logits = torch.cat(all_logits, dim=0)
     test_labels = torch.cat(all_labels, dim=0)
+
+    # Generate ROC and PR Curves
+    import numpy as np
+    from sklearn.metrics import (
+        precision_recall_curve, roc_curve, auc, PrecisionRecallDisplay, RocCurveDisplay
+    )
+    import matplotlib.pyplot as plt
+    import torch.nn.functional as F
+
+    # Get positive class probabilities
+    probs = F.softmax(test_logits, dim=1)[:, 1].cpu().numpy()
+    true = test_labels.cpu().numpy()
+
+    # --- ROC Curve ---
+    fpr, tpr, roc_thresholds = roc_curve(true, probs)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure()
+    RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc).plot()
+    plt.title(f"ROC Curve (AUC = {roc_auc:.2f})")
+    plt.savefig(os.path.join(train_cfg["output_dir"], "test_roc_curve.png"))
+
+    # --- Precision-Recall Curve ---
+    precision, recall, pr_thresholds = precision_recall_curve(true, probs)
+    pr_auc = auc(recall, precision)
+
+    plt.figure()
+    PrecisionRecallDisplay(precision=precision, recall=recall, average_precision=pr_auc).plot()
+    plt.title(f"Precision-Recall Curve (PR AUC = {pr_auc:.2f})")
+    plt.savefig(os.path.join(train_cfg["output_dir"], "test_pr_curve.png"))
+
+    # --- Threshold sweep ---
+    from sklearn.metrics import precision_recall_fscore_support
+
+    print("\nThreshold sweep:")
+    for threshold in [0.5, 0.4, 0.3]:
+        preds = (probs >= threshold).astype(int)
+        prec, rec, f1, _ = precision_recall_fscore_support(true, preds, average='binary')
+        print(f"Threshold {threshold:.1f} | Precision: {prec:.3f} | Recall: {rec:.3f} | F1: {f1:.3f}")
+
+
     test_metrics = compute_metrics(test_logits, test_labels)
     print("Test metrics:", test_metrics)
 

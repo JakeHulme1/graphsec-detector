@@ -23,8 +23,8 @@ POETRY_EXTRAS="--with gpu"
 HOST_DATA="/mnt/faster0/joh46/datasets/vudenc"
 
 # clear outputs (only if dir exists)
-if [[ -d outputs ]]; then
-  rm -rf outputs/*
+if [[ -d output-graphsec ]]; then
+  rm -rf output-graphsec/*
 fi
 
 # update code
