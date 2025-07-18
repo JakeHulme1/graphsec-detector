@@ -143,7 +143,8 @@ def train():
     # Class weighted loss
     num_pos = train_labels.sum().item()
     num_neg = len(train_labels) - num_pos
-    class_weights = torch.tensor([1.0, num_neg / num_pos], device=device)
+    pos_weight = (num_neg / num_pos) * 1.5  # or try 2.0 if needed
+    class_weights = torch.tensor([1.0, pos_weight], device=device)
     loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
 
     print(f"Train pos %: {100 * train_labels.sum().item() / len(train_labels):.2f}")
