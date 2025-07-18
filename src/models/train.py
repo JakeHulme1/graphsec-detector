@@ -49,7 +49,7 @@ def collate_fn(batch):
     # --- CHANGES ---
     # build a position_idx vector compatible with GraphCodeBERT
     bs, seq_len = input_ids.shape
-    tok_pos = torch.arrange(seq_len, device=input_ids.device)
+    tok_pos = torch.arange(seq_len, device=input_ids.device)
     tok_pos = tok_pos.unsqueeze(0).expand(bs, -1) + 2 # [B, C]
     tok_pos = tok_pos * attention_mask + (1 - attention_mask)
 
