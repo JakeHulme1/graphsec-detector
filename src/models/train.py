@@ -295,7 +295,7 @@ def train():
 
     # threshold sweep
     print("\nThreshold sweep:")
-    for thr in [0.5,0.4,0.3]:
+    for thr in [0.5,0.4,0.3, 0.2, 0.1]:
         preds = (probs>=thr).astype(int)
         prec, rec, f1, _ = precision_recall_fscore_support(true, preds,
                                                            average="binary",
