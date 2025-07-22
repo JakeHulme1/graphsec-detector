@@ -77,7 +77,9 @@ def train():
         mcfg = json.load(f)
     model_cfg = SimpleNamespace(**mcfg)
 
-    with open("config/train_config.yaml") as f:
+    # get current train config for hyper parameter sweep
+    cfg_path = os.getenv("TRAIN_CONFIG_PATH", "config/train_config.yaml")
+    with open(cfg_path) as f:
         train_cfg = yaml.safe_load(f)
     # cast to correct types
     train_cfg["learning_rate"]   = float(train_cfg["learning_rate"])
