@@ -31,7 +31,7 @@ for LR in "${LRS[@]}"; do
   for WD in "${WDS[@]}"; do
     EXP_NAME="lr-${LR}_wd-${WD}"
     EXP_DIR="${OUTDIR}/${EXP_NAME}"
-    echo "[*] Starting experiment $EXP_NAME → $EXP_DIR"
+    echo "[*] Starting experiment $EXP_NAME -> $EXP_DIR"
     mkdir -p "$EXP_DIR"
 
     # copy & patch train_config.yaml
@@ -49,6 +49,8 @@ for LR in "${LRS[@]}"; do
       -p 10006:6006 \
       "$IMAGE_NAME"
 
-    echo "[*] Done $EXP_NAME"
+    echo "[*] Experiment $EXP_NAME complete -> $EXP_DIR"
   done
 done
+
+echo "[*] All sweeps complete!"
