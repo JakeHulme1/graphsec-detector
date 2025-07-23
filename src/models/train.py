@@ -219,7 +219,7 @@ def train():
 
             if phase=="val":
                 # checkpoint by ROC
-                if metrics["roc_auc"]>best_val_roc:
+                if metrics["pr_auc"]>best_val_roc:
                     best_val_roc=metrics["roc_auc"]
                     torch.save(classifier.state_dict(),
                                os.path.join(train_cfg["output_dir"],"best.pt"))
