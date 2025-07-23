@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import (
     precision_recall_curve,
     roc_curve,
@@ -93,7 +93,7 @@ def train():
     device = torch.device(train_cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu"))
 
     os.makedirs(train_cfg["output_dir"], exist_ok=True)
-    writer = SummaryWriter(log_dir=train_cfg["output_dir"])
+    #writer = SummaryWriter(log_dir=train_cfg["output_dir"])
 
     # ─── LOAD DATA ────────────────────────────────────────────────────────────────
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -232,12 +232,12 @@ def train():
               f"val_loss={histories['val_loss'][-1]:.4f} "
               f"val_roc_auc={histories['val_roc_auc'][-1]:.4f}")
 
-        writer.add_scalar("Loss/train", histories["train_loss"][-1], epoch)
-        writer.add_scalar("Loss/val", histories["val_loss"][-1], epoch)
-        writer.add_scalar("ROC_AUC/val", histories["val_roc_auc"][-1], epoch)
-        for name in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]:
-            writer.add_scalar(f"Metric/train/{name}", histories[f"train_{name}"][-1], epoch)
-            writer.add_scalar(f"Metric/val/{name}",   histories[f"val_{name}"][-1],   epoch)
+        #writer.add_scalar("Loss/train", histories["train_loss"][-1], epoch)
+        #writer.add_scalar("Loss/val", histories["val_loss"][-1], epoch)
+        #writer.add_scalar("ROC_AUC/val", histories["val_roc_auc"][-1], epoch)
+        #for name in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]:
+            #writer.add_scalar(f"Metric/train/{name}", histories[f"train_{name}"][-1], epoch)
+            #writer.add_scalar(f"Metric/val/{name}",   histories[f"val_{name}"][-1],   epoch)
 
         if early_stop>=3:
             print(f"Early stopping at epoch {epoch}")
@@ -305,7 +305,7 @@ def train():
         print(f"Thr {thr:.1f} | Precision={prec:.3f} | Recall={rec:.3f} | F1={f1:.3f}")
 
     print("Test metrics:", compute_metrics(test_logits, test_labels))
-    writer.close()
+    #writer.close()
 
 
 if __name__ == "__main__":
