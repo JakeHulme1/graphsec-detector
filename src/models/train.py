@@ -149,7 +149,7 @@ def train():
         histories[f"train_{m}"] = []
         histories[f"val_{m}"]   = []
 
-    best_val_roc = -1
+    best_val_pr = -1
     early_stop   = 0
 
     # ─── EPOCH LOOP ──────────────────────────────────────────────────────────────
@@ -219,8 +219,8 @@ def train():
 
             if phase=="val":
                 # checkpoint by ROC
-                if metrics["pr_auc"]>best_val_roc:
-                    best_val_roc=metrics["roc_auc"]
+                if metrics["pr_auc"]>best_val_pr:
+                    best_val_pr=metrics["pr_auc"]
                     torch.save(classifier.state_dict(),
                                os.path.join(train_cfg["output_dir"],"best.pt"))
                     early_stop=0
@@ -230,7 +230,7 @@ def train():
         print(f"Epoch {epoch:2d} | "
               f"train_loss={avg_train_loss:.4f} "
               f"val_loss={histories['val_loss'][-1]:.4f} "
-              f"val_roc_auc={histories['val_roc_auc'][-1]:.4f}")
+              f"val_pr_auc={histories['val_pr_auc'][-1]:.4f}")
 
         #writer.add_scalar("Loss/train", histories["train_loss"][-1], epoch)
         #writer.add_scalar("Loss/val", histories["val_loss"][-1], epoch)
