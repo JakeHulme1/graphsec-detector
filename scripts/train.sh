@@ -25,8 +25,9 @@ hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
 # ─── hyperparameter grid ────
-LRS=(5e-5 3e-5 1e-5)
-WDS=(0.01 0.001 0.0001)
+LRS=(5e-6 1e-5 2e-5)
+WDS=(0.1 0.2 0.3)
+
 
 for LR in "${LRS[@]}"; do
   for WD in "${WDS[@]}"; do
@@ -40,7 +41,7 @@ for LR in "${LRS[@]}"; do
       s|^output_dir: .*|output_dir: ${OUTDIR}/${EXP_NAME}|;
     " config/train_config.yaml
 
-    # fire off the run (train.py will pick up config/train_config.yaml automatically)
+    # run training
     hare run \
       --gpus "device=${GPU_DEVICE}" \
       -v "$(pwd)":/app \

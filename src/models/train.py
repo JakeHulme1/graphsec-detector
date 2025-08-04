@@ -129,6 +129,13 @@ def train(train_model: bool = True):
 
     # ─── MODEL, OPTIM, SCHED ─────────────────────────────────────────────────────
     classifier = GCBertClassifier(model_cfg).to(device)
+
+    # ─── FREEZE ALL BUT CLASSIFIER HEAD ───────────────────────────────
+    for name, param in classifier.named_parameters():
+        if not name.startswith("classifier."):
+            param.requires_grad = False
+
+
     no_decay = ["bias", "LayerNorm.weight"]
     optim_groups = [
         {"params": [p for n,p in classifier.named_parameters() if not any(nd in n for nd in no_decay)],
@@ -172,6 +179,9 @@ def train(train_model: bool = True):
                 loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
                 loss = loss / train_cfg["grad_accum_steps"]
                 loss.backward()
+                torch.nn.utils.clip_grad_norm_(classifier.parameters(), max_norm=1.0)
+                optimizer.step()
+
                 total_train_loss += loss.item()
 
                 if step % train_cfg["grad_accum_steps"] == 0:
