@@ -135,19 +135,35 @@ def train(train_model: bool = True):
     #     if not name.startswith("classifier."):
     #         param.requires_grad = False
 
-    # gradual unfreeeze
-    last_block = []
-    head_params = []
-    for name, p in classifier.named_parameters():
-        if name.startswith("encoder.encoder.layer.11."):    # last transformer layer
-            p.requires_grad = True
-            last_block.append(p)
-        elif name.startswith("classifier.") or name.startswith("dense") or name.startswith("dropout"):
-            p.requires_grad = True
-            head_params.append(p)
-        else:
-            p.requires_grad = False
+    # # gradual unfreeeze
+    # last_block = []
+    # head_params = []
+    # for name, p in classifier.named_parameters():
+    #     if name.startswith("encoder.encoder.layer.11."):    # last transformer layer
+    #         p.requires_grad = True
+    #         last_block.append(p)
+    #     elif name.startswith("classifier.") or name.startswith("dense") or name.startswith("dropout"):
+    #         p.requires_grad = True
+    #         head_params.append(p)
+    #     else:
+    #         p.requires_grad = False
 
+    # ─── unfreeze last two transformer blocks + head ─────────────
+    block11 = []
+    block10 = []
+    head    = []
+    for name, param in classifier.named_parameters():
+        if name.startswith("encoder.encoder.layer.11."):
+            param.requires_grad = True
+            block11.append((name, param))
+        elif name.startswith("encoder.encoder.layer.10."):
+            param.requires_grad = True
+            block10.append((name, param))
+        elif name.startswith("classifier.") or name.startswith("dense") or name.startswith("dropout"):
+            param.requires_grad = True
+            head.append((name, param))
+        else:
+            param.requires_grad = False
 
     # no_decay = ["bias", "LayerNorm.weight"]
     # optim_groups = [
@@ -158,32 +174,34 @@ def train(train_model: bool = True):
     # ]
     # optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
 
-    # ─── two-tier optimizer ───────────────────────────
+    # ─── optimizer with separate LRs for head, layer-11, layer-10 ───
     no_decay = ["bias", "LayerNorm.weight"]
-    optimizer = AdamW([
-        {
-            "params": [p for p in head_params if not any(nd in n for nd in no_decay for n in [name] )],
-            "lr": 5e-6,
-            "weight_decay": train_cfg["weight_decay"]
-        },
-        {
-            "params": [p for p in last_block if not any(nd in name for nd in no_decay)],
-            "lr": 1e-6,
-            "weight_decay": train_cfg["weight_decay"]
-        },
-        {
-            "params": [p for name,p in classifier.named_parameters() if any(nd in name for nd in no_decay) and p.requires_grad],
-            "lr": 5e-6,
-            "weight_decay": 0.0
-        },
-    ])
+    def split_group(params, lr):
+        return [
+            {
+                "params": [p for n,p in params if not any(nd in n for nd in no_decay)],
+                "lr": lr,
+                "weight_decay": train_cfg["weight_decay"],
+            },
+            {
+                "params": [p for n,p in params if any(nd in n for nd in no_decay)],
+                "lr": lr,
+                "weight_decay": 0.0,
+            },
+        ]
 
+    optimizer_grouped = []
+    optimizer_grouped += split_group(head,   5e-6)
+    optimizer_grouped += split_group(block11, 2e-6)
+    optimizer_grouped += split_group(block10, 1e-6)
+
+    optimizer = AdamW(optimizer_grouped)
 
     total_steps = (len(train_loader) // train_cfg["grad_accum_steps"]) * train_cfg["epochs"]
     # scheduler   = get_linear_schedule_with_warmup(optimizer,
     #                                               train_cfg["warmup_steps"],
     #                                               total_steps)
-    warmup = int(0.2 * total_steps)
+    warmup = int(0.1 * total_steps)
     scheduler = get_linear_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=warmup,
                                                 num_training_steps=total_steps)
