@@ -130,24 +130,63 @@ def train(train_model: bool = True):
     # ─── MODEL, OPTIM, SCHED ─────────────────────────────────────────────────────
     classifier = GCBertClassifier(model_cfg).to(device)
 
-    # ─── FREEZE ALL BUT CLASSIFIER HEAD ───────────────────────────────
-    for name, param in classifier.named_parameters():
-        if not name.startswith("classifier."):
-            param.requires_grad = False
+    # # ─── FREEZE ALL BUT CLASSIFIER HEAD ───────────────────────────────
+    # for name, param in classifier.named_parameters():
+    #     if not name.startswith("classifier."):
+    #         param.requires_grad = False
+
+    # gradual unfreeeze
+    last_block = []
+    head_params = []
+    for name, p in classifier.named_parameters():
+        if name.startswith("encoder.encoder.layer.11."):    # last transformer layer
+            p.requires_grad = True
+            last_block.append(p)
+        elif name.startswith("classifier.") or name.startswith("dense") or name.startswith("dropout"):
+            p.requires_grad = True
+            head_params.append(p)
+        else:
+            p.requires_grad = False
 
 
+    # no_decay = ["bias", "LayerNorm.weight"]
+    # optim_groups = [
+    #     {"params": [p for n,p in classifier.named_parameters() if not any(nd in n for nd in no_decay)],
+    #      "weight_decay": train_cfg["weight_decay"]},
+    #     {"params": [p for n,p in classifier.named_parameters() if     any(nd in n for nd in no_decay)],
+    #      "weight_decay": 0.0},
+    # ]
+    # optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
+
+    # ─── two-tier optimizer ───────────────────────────
     no_decay = ["bias", "LayerNorm.weight"]
-    optim_groups = [
-        {"params": [p for n,p in classifier.named_parameters() if not any(nd in n for nd in no_decay)],
-         "weight_decay": train_cfg["weight_decay"]},
-        {"params": [p for n,p in classifier.named_parameters() if     any(nd in n for nd in no_decay)],
-         "weight_decay": 0.0},
-    ]
-    optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
+    optimizer = AdamW([
+        {
+            "params": [p for p in head_params if not any(nd in n for nd in no_decay for n in [name] )],
+            "lr": 5e-6,
+            "weight_decay": train_cfg["weight_decay"]
+        },
+        {
+            "params": [p for p in last_block if not any(nd in name for nd in no_decay)],
+            "lr": 1e-6,
+            "weight_decay": train_cfg["weight_decay"]
+        },
+        {
+            "params": [p for name,p in classifier.named_parameters() if any(nd in name for nd in no_decay) and p.requires_grad],
+            "lr": 5e-6,
+            "weight_decay": 0.0
+        },
+    ])
+
+
     total_steps = (len(train_loader) // train_cfg["grad_accum_steps"]) * train_cfg["epochs"]
-    scheduler   = get_linear_schedule_with_warmup(optimizer,
-                                                  train_cfg["warmup_steps"],
-                                                  total_steps)
+    # scheduler   = get_linear_schedule_with_warmup(optimizer,
+    #                                               train_cfg["warmup_steps"],
+    #                                               total_steps)
+    warmup = int(0.2 * total_steps)
+    scheduler = get_linear_schedule_with_warmup(optimizer,
+                                                num_warmup_steps=warmup,
+                                                num_training_steps=total_steps)
 
     histories = {"train_loss": [], "val_loss": []}
     for m in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]:

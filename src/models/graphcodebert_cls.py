@@ -36,11 +36,19 @@ class GCBertClassifier(nn.Module):
         # Wrap it with the graph-aware embedding logic
         self.encoder = GraphCodeBERTEncoder(hf_encoder)
 
-        # Dropout
-        self.dropout = nn.Dropout(config.classifier_dropout or config.hidden_dropout_prob or 0.1)
+        # # Dropout
+        # self.dropout = nn.Dropout(config.classifier_dropout or config.hidden_dropout_prob or 0.1)
 
-        # Classification head: just a single layer from hidden_size -> num_labels
-        self.classifier = nn.Linear(config.hidden_size, cfg.num_labels)
+        # # Classification head: just a single layer from hidden_size -> num_labels
+        # self.classifier = nn.Linear(config.hidden_size, cfg.num_labels)
+
+        # two‐layer MLP head
+        hidden_size = config.hidden_size
+        mid_size    = hidden_size // 2
+        self.dropout1   = nn.Dropout(0.4)
+        self.dense      = nn.Linear(hidden_size, mid_size)
+        self.dropout2   = nn.Dropout(0.4)
+        self.classifier = nn.Linear(mid_size, cfg.num_labels)
 
 
     def forward(self, **batch):
@@ -74,9 +82,10 @@ class GCBertClassifier(nn.Module):
             nl_inputs=None,
         )
 
-        # Dropout + linear -> logits
-        x = self.dropout(pooled)
-        logits = self.classifier(x)  # [batch, num_labels]
+        x = self.dropout1(pooled)
+        x = torch.relu(self.dense(x))
+        x = self.dropout2(x)
+        logits = self.classifier(x)
 
         # # Cross‐entropy loss
         # if labels is not None:
