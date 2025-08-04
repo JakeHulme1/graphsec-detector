@@ -154,8 +154,9 @@ def train(train_model: bool = True):
         histories[f"train_{m}"] = []
         histories[f"val_{m}"]   = []
 
-    best_val_pr = -1
-    early_stop  = 0
+    best_val_loss = float("inf")
+    early_stop    = 0
+
 
     if train_model:
         # ─── EPOCH LOOP ──────────────────────────────────────────────────────────
@@ -221,14 +222,18 @@ def train(train_model: bool = True):
                 for k,v in metrics.items():
                     histories[f"{phase}_{k}"].append(v)
 
-                if phase == "val":
-                    if metrics["pr_auc"] > best_val_pr:
-                        best_val_pr = metrics["pr_auc"]
-                        torch.save(classifier.state_dict(),
-                                   os.path.join(train_cfg["output_dir"], "best.pt"))
+                if phase=="val":
+                    current_val_loss = histories["val_loss"][-1]
+                    if current_val_loss < best_val_loss:
+                        best_val_loss = current_val_loss
+                        torch.save(
+                            classifier.state_dict(),
+                            os.path.join(train_cfg["output_dir"], "best.pt")
+                        )
                         early_stop = 0
                     else:
                         early_stop += 1
+
 
             print(f"Epoch {epoch:2d} | "
                   f"train_loss={histories['train_loss'][-1]:.4f} "
