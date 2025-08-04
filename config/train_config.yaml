@@ -8,4 +8,4 @@ warmup_steps: 100
 grad_accum_steps: 2
 num_workers: 0
 output_dir: outputs/
-dataset_name: open_redirect
+dataset_name: xsrf

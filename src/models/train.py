@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
-#from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 from sklearn.metrics import (
     precision_recall_curve,
     roc_curve,
@@ -71,29 +71,27 @@ def collate_fn(batch):
     }
 
 
-def train():
+def train(train_model: bool = True):
     # ─── LOAD CONFIGS ─────────────────────────────────────────────────────────────
     with open("config/model_config.json") as f:
         mcfg = json.load(f)
     model_cfg = SimpleNamespace(**mcfg)
 
-    # get current train config for hyper parameter sweep
     cfg_path = os.getenv("TRAIN_CONFIG_PATH", "config/train_config.yaml")
     with open(cfg_path) as f:
         train_cfg = yaml.safe_load(f)
-    # cast to correct types
-    train_cfg["learning_rate"]   = float(train_cfg["learning_rate"])
-    train_cfg["weight_decay"]    = float(train_cfg["weight_decay"])
-    train_cfg["warmup_steps"]    = int(train_cfg["warmup_steps"])
-    train_cfg["batch_size"]      = int(train_cfg["batch_size"])
-    train_cfg["epochs"]          = int(train_cfg["epochs"])
+    train_cfg["learning_rate"]    = float(train_cfg["learning_rate"])
+    train_cfg["weight_decay"]     = float(train_cfg["weight_decay"])
+    train_cfg["warmup_steps"]     = int(train_cfg["warmup_steps"])
+    train_cfg["batch_size"]       = int(train_cfg["batch_size"])
+    train_cfg["epochs"]           = int(train_cfg["epochs"])
     train_cfg["grad_accum_steps"] = int(train_cfg["grad_accum_steps"])
 
     set_seed(train_cfg.get("seed", 42))
     device = torch.device(train_cfg.get("device", "cuda" if torch.cuda.is_available() else "cpu"))
 
     os.makedirs(train_cfg["output_dir"], exist_ok=True)
-    #writer = SummaryWriter(log_dir=train_cfg["output_dir"])
+    # writer = SummaryWriter(log_dir=train_cfg["output_dir"])
 
     # ─── LOAD DATA ────────────────────────────────────────────────────────────────
     ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -139,138 +137,130 @@ def train():
          "weight_decay": 0.0},
     ]
     optimizer = AdamW(optim_groups, lr=train_cfg["learning_rate"])
-    total_steps = (len(train_loader)//train_cfg["grad_accum_steps"])*train_cfg["epochs"]
+    total_steps = (len(train_loader) // train_cfg["grad_accum_steps"]) * train_cfg["epochs"]
     scheduler   = get_linear_schedule_with_warmup(optimizer,
                                                   train_cfg["warmup_steps"],
                                                   total_steps)
 
-    histories = {"train_loss":[], "val_loss":[]}
+    histories = {"train_loss": [], "val_loss": []}
     for m in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]:
         histories[f"train_{m}"] = []
         histories[f"val_{m}"]   = []
 
     best_val_pr = -1
-    early_stop   = 0
+    early_stop  = 0
 
-    # ─── EPOCH LOOP ──────────────────────────────────────────────────────────────
-    for epoch in range(1, train_cfg["epochs"]+1):
-        # — TRAINING —
-        classifier.train()
-        total_train_loss = 0
-        for step, batch in enumerate(train_loader, start=1):
-            batch = {k:v.to(device) for k,v in batch.items()}
+    if train_model:
+        # ─── EPOCH LOOP ──────────────────────────────────────────────────────────
+        for epoch in range(1, train_cfg["epochs"] + 1):
+            classifier.train()
+            total_train_loss = 0
+            for step, batch in enumerate(train_loader, start=1):
+                batch = {k:v.to(device) for k,v in batch.items()}
+                bs, L = batch["attention_mask"].shape
+                _,  N = batch["node_mask"].shape
+                if N != L:
+                    pad_kwargs = dict(device=batch["node_mask"].device,
+                                      dtype=batch["node_mask"].dtype)
+                    batch["node_mask"]     = torch.cat([batch["node_mask"],
+                                                        torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
+                    pad_kwargs["dtype"] = batch["node_type_ids"].dtype
+                    batch["node_type_ids"] = torch.cat([batch["node_type_ids"],
+                                                        torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
 
-            # pad graph‐node portion if needed
-            bs, L = batch["attention_mask"].shape
-            _,  N = batch["node_mask"].shape
-            if N!=L:
-                pad_kwargs = dict(device=batch["node_mask"].device,
-                                  dtype=batch["node_mask"].dtype)
-                batch["node_mask"]     = torch.cat([batch["node_mask"],
-                                                    torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
-                pad_kwargs["dtype"] = batch["node_type_ids"].dtype
-                batch["node_type_ids"] = torch.cat([batch["node_type_ids"],
-                                                    torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
+                logits = classifier(**batch)
+                loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
+                loss = loss / train_cfg["grad_accum_steps"]
+                loss.backward()
+                total_train_loss += loss.item()
 
-            logits = classifier(**batch)
-            loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
-            loss = loss / train_cfg["grad_accum_steps"]
-            loss.backward()
-            total_train_loss += loss.item()
+                if step % train_cfg["grad_accum_steps"] == 0:
+                    optimizer.step()
+                    scheduler.step()
+                    optimizer.zero_grad()
 
-            if step % train_cfg["grad_accum_steps"] == 0:
-                optimizer.step()
-                scheduler.step()
-                optimizer.zero_grad()
+            histories["train_loss"].append(total_train_loss / len(train_loader))
 
-        avg_train_loss = total_train_loss/len(train_loader)
-        histories["train_loss"].append(avg_train_loss)
+            # EVAL on train & val
+            for phase, loader in [("train", train_loader), ("val", val_loader)]:
+                classifier.eval()
+                all_logits, all_labels, running_loss = [], [], 0
+                with torch.no_grad():
+                    for batch in loader:
+                        batch = {k:v.to(device) for k,v in batch.items()}
+                        bs, L = batch["attention_mask"].shape
+                        _,  N = batch["node_mask"].shape
+                        if N != L:
+                            pad_kwargs = dict(device=batch["node_mask"].device,
+                                              dtype=batch["node_mask"].dtype)
+                            batch["node_mask"]     = torch.cat([batch["node_mask"],
+                                                                torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
+                            pad_kwargs["dtype"] = batch["node_type_ids"].dtype
+                            batch["node_type_ids"] = torch.cat([batch["node_type_ids"],
+                                                                torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
 
-        # — EVAL (train / val) —
-        for phase, loader in [("train",train_loader),("val",val_loader)]:
-            classifier.eval()
-            all_logits, all_labels, running_loss = [], [], 0
-            with torch.no_grad():
-                for batch in loader:
-                    batch = {k:v.to(device) for k,v in batch.items()}
-                    bs, L = batch["attention_mask"].shape
-                    _,  N = batch["node_mask"].shape
-                    if N!=L:
-                        pad_kwargs = dict(device=batch["node_mask"].device,
-                                          dtype=batch["node_mask"].dtype)
-                        batch["node_mask"]     = torch.cat([batch["node_mask"],
-                                                            torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
-                        pad_kwargs["dtype"] = batch["node_type_ids"].dtype
-                        batch["node_type_ids"] = torch.cat([batch["node_type_ids"],
-                                                            torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
+                        logits = classifier(**batch)
+                        loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
+                        running_loss += loss.item()
+                        all_logits.append(logits)
+                        all_labels.append(batch["labels"])
 
-                    logits = classifier(**batch)
-                    loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
-                    running_loss += loss.item()
-                    all_logits.append(logits)
-                    all_labels.append(batch["labels"])
+                histories[f"{phase}_loss"].append(running_loss / len(loader))
+                metrics = compute_metrics(torch.cat(all_logits, dim=0),
+                                          torch.cat(all_labels, dim=0))
+                for k,v in metrics.items():
+                    histories[f"{phase}_{k}"].append(v)
 
-            avg_loss = running_loss/len(loader)
-            histories[f"{phase}_loss"].append(avg_loss)
-            metrics = compute_metrics(torch.cat(all_logits,dim=0),
-                                      torch.cat(all_labels,dim=0))
-            for k,v in metrics.items():
-                histories[f"{phase}_{k}"].append(v)
+                if phase == "val":
+                    if metrics["pr_auc"] > best_val_pr:
+                        best_val_pr = metrics["pr_auc"]
+                        torch.save(classifier.state_dict(),
+                                   os.path.join(train_cfg["output_dir"], "best.pt"))
+                        early_stop = 0
+                    else:
+                        early_stop += 1
 
-            if phase=="val":
-                # checkpoint by ROC
-                if metrics["pr_auc"]>best_val_pr:
-                    best_val_pr=metrics["pr_auc"]
-                    torch.save(classifier.state_dict(),
-                               os.path.join(train_cfg["output_dir"],"best.pt"))
-                    early_stop=0
-                else:
-                    early_stop+=1
+            print(f"Epoch {epoch:2d} | "
+                  f"train_loss={histories['train_loss'][-1]:.4f} "
+                  f"val_loss={histories['val_loss'][-1]:.4f} "
+                  f"val_pr_auc={histories['val_pr_auc'][-1]:.4f}")
 
-        print(f"Epoch {epoch:2d} | "
-              f"train_loss={avg_train_loss:.4f} "
-              f"val_loss={histories['val_loss'][-1]:.4f} "
-              f"val_pr_auc={histories['val_pr_auc'][-1]:.4f}")
+            if early_stop >= 3:
+                print(f"Early stopping at epoch {epoch}")
+                break
 
-        #writer.add_scalar("Loss/train", histories["train_loss"][-1], epoch)
-        #writer.add_scalar("Loss/val", histories["val_loss"][-1], epoch)
-        #writer.add_scalar("ROC_AUC/val", histories["val_roc_auc"][-1], epoch)
-        #for name in ["accuracy","precision","recall","f1","pr_auc","roc_auc"]:
-            #writer.add_scalar(f"Metric/train/{name}", histories[f"train_{name}"][-1], epoch)
-            #writer.add_scalar(f"Metric/val/{name}",   histories[f"val_{name}"][-1],   epoch)
+        plot_training(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
 
-        if early_stop>=3:
-            print(f"Early stopping at epoch {epoch}")
-            break
+    else:
+        # ─── SKIP TRAINING ────────────────────────────────────────────────────────
+        print("Skipping training, loading best checkpoint for evaluation")
+        checkpoint = os.path.join(train_cfg["output_dir"], "best.pt")
+        classifier.load_state_dict(torch.load(checkpoint, map_location=device))
+        classifier.eval()
 
-    # ─── FINAL PLOTS & TEST EVAL ─────────────────────────────────────────────────
-    plot_training(histories, os.path.join(train_cfg["output_dir"],"training_plot.png"))
-
-    # load best and eval on test
-    classifier.load_state_dict(torch.load(os.path.join(train_cfg["output_dir"],"best.pt")))
-    classifier.eval()
+    # ─── FINAL TEST EVAL ─────────────────────────────────────────────────────────
     all_logits, all_labels, test_loss = [], [], 0
     with torch.no_grad():
         for batch in test_loader:
             batch = {k:v.to(device) for k,v in batch.items()}
             bs, L = batch["attention_mask"].shape
             _,  N = batch["node_mask"].shape
-            if N!=L:
+            if N != L:
                 pad_kwargs = dict(device=batch["node_mask"].device,
                                   dtype=batch["node_mask"].dtype)
                 batch["node_mask"]     = torch.cat([batch["node_mask"],
-                                                    torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
+                                                    torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
                 pad_kwargs["dtype"] = batch["node_type_ids"].dtype
                 batch["node_type_ids"] = torch.cat([batch["node_type_ids"],
-                                                    torch.zeros(bs,L-N,**pad_kwargs)],dim=1)
+                                                    torch.zeros(bs, L-N, **pad_kwargs)], dim=1)
 
             logits = classifier(**batch)
             loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
-            test_loss+=loss.item()
+            test_loss += loss.item()
             all_logits.append(logits)
             all_labels.append(batch["labels"])
 
-    avg_test_loss = test_loss/len(test_loader)
+    avg_test_loss = test_loss / len(test_loader)
     print(f"Test loss: {avg_test_loss:.4f}")
 
     test_logits = torch.cat(all_logits, dim=0)
@@ -284,7 +274,7 @@ def train():
     plt.figure()
     RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc).plot()
     plt.title(f"ROC Curve (AUC={roc_auc:.2f})")
-    plt.savefig(os.path.join(train_cfg["output_dir"],"test_roc_curve.png"))
+    plt.savefig(os.path.join(train_cfg["output_dir"], "test_roc_curve.png"))
 
     # PR curve
     precision, recall, _ = precision_recall_curve(true, probs)
@@ -293,20 +283,31 @@ def train():
     PrecisionRecallDisplay(precision=precision, recall=recall,
                            average_precision=pr_auc).plot()
     plt.title(f"Precision-Recall (AUC={pr_auc:.2f})")
-    plt.savefig(os.path.join(train_cfg["output_dir"],"test_pr_curve.png"))
+    plt.savefig(os.path.join(train_cfg["output_dir"], "test_pr_curve.png"))
 
     # threshold sweep
     print("\nThreshold sweep:")
-    for thr in [0.5,0.4,0.3, 0.2, 0.1]:
-        preds = (probs>=thr).astype(int)
+    for thr in [0.5, 0.4, 0.3, 0.2, 0.1]:
+        preds = (probs >= thr).astype(int)
         prec, rec, f1, _ = precision_recall_fscore_support(true, preds,
                                                            average="binary",
                                                            zero_division=0)
         print(f"Thr {thr:.1f} | Precision={prec:.3f} | Recall={rec:.3f} | F1={f1:.3f}")
 
     print("Test metrics:", compute_metrics(test_logits, test_labels))
-    #writer.close()
 
 
 if __name__ == "__main__":
-    train()
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Train or evaluate GraphCodeBERT classifier"
+    )
+    parser.add_argument(
+        "--train_model",
+        type=lambda x: x.lower() in ("1", "true", "yes"),
+        default=True,
+        help="Whether to run training. Pass false to skip training and only eval."
+    )
+    args = parser.parse_args()
+    train(train_model=args.train_model)

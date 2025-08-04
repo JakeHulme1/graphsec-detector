@@ -34,4 +34,4 @@ RUN poetry install --no-interaction --no-ansi --with gpu --no-root
 COPY . .
 
 # Default command: train
-CMD ["poetry", "run", "python", "-u", "src/models/train.py"]
+CMD ["poetry", "run", "python", "-u", "src/models/train.py", "--train_model", "false"]
