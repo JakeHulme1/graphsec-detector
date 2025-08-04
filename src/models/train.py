@@ -301,7 +301,10 @@ def train(train_model: bool = True):
                 print(f"Early stopping at epoch {epoch}")
                 break
 
-        plot_training(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
+        try:
+            plot_training(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
+        except OSError as e:
+            print(f"[Warning] could not save training_plot.png: {e}")
 
     else:
         # ─── SKIP TRAINING ────────────────────────────────────────────────────────

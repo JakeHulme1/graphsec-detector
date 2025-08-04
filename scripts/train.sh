@@ -46,7 +46,7 @@ for LR in "${LRS[@]}"; do
       --gpus "device=${GPU_DEVICE}" \
       -v "$(pwd)":/app \
       -v "${HOST_DATA}":/app/datasets/vudenc:ro \
-      -v "$(pwd)/$OUTDIR":/app/outputs \
+      -v "$(pwd)/$OUTDIR":/app/outputs-graphsec \
       -p 10006:6006 \
       "$IMAGE_NAME"
 
