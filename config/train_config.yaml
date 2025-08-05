@@ -15,3 +15,5 @@ loss: focal
 focal_gamma: 2.0
 
 output_dir: output-graphsec
+
+dataset_name: xsrf
