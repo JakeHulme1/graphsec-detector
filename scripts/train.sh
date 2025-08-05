@@ -25,8 +25,8 @@ hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
 # ─── hyperparameter grid ────
-LRS=(1e-3 3e-3 1e-2)
-WDS=(0.001 0.005)
+LRS=(0.008 0.010 0.012)
+WDS=(0.0008 0.0010 0.0012)
 
 
 for LR in "${LRS[@]}"; do

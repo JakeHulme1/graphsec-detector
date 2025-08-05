@@ -25,6 +25,23 @@ from data.dataset import VulnerabilityDataset
 from models.graphcodebert_cls import GCBertClassifier
 from utils.metrics import compute_metrics
 
+from torch import nn
+
+class WeightedFocalLoss(nn.Module):
+    def __init__(self, alpha, gamma=2.0, eps=1e-7):
+        super().__init__()
+        self.alpha = alpha
+        self.gamma = gamma
+        self.eps   = eps
+
+    def forward(self, logits, targets):
+        probs = torch.softmax(logits, dim=-1).clamp(self.eps, 1-self.eps)
+        pt    = probs.gather(1, targets.unsqueeze(1)).squeeze(1)
+        w     = self.alpha[targets]
+        loss  = - w * (1 - pt)**self.gamma * pt.log()
+        return loss.mean()
+
+
 
 def set_seed(seed: int):
     random.seed(seed)
@@ -117,7 +134,11 @@ def train(train_model: bool = True):
     num_pos = all_train_labels.sum().item()
     num_neg = len(all_train_labels) - num_pos
     class_weights = torch.tensor([1.0, num_neg/num_pos], device=device)
-    loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights)
+    if train_cfg["loss"] == "focal":
+        loss_fn = WeightedFocalLoss(alpha=class_weights,
+                                gamma=getattr(cfg.training, "focal_gamma", 2.0))
+    else:
+        loss_fn = nn.CrossEntropyLoss(weight=class_weights)
 
     print(f"Train pos %: {100*num_pos/len(all_train_labels):.2f}")
     print(f"Val pos %:   {100*sum(ex['labels'] for ex in val_ds)/len(val_ds):.2f}")

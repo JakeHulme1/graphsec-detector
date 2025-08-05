@@ -7,5 +7,7 @@ weight_decay: 0.005
 warmup_steps_scale: 0.0
 grad_accum_steps: 2
 num_workers: 0
+loss: focal
+gamma: 2.0
 output_dir: output-graphsec
 dataset_name: xsrf
