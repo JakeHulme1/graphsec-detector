@@ -17,6 +17,7 @@ hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
 # ─── Sanitize YAML (unindents keys, for some reason was indenting keys)
+sed -i -E \
   -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
   -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
   "$CONFIG"
