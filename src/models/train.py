@@ -206,8 +206,14 @@ def train(train_model: bool = True):
                 break
 
         # Save plot
+                # Save plot of only losses to avoid dimension mismatch
         try:
-            plot_training(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
+            loss_hist = {"train_loss": histories["train_loss"],
+                         "val_loss":   histories["val_loss"]}
+            plot_training(loss_hist,
+                          os.path.join(train_cfg["output_dir"], "training_plot.png"))
+        except Exception as e:
+            print(f"Warning: could not save training_plot.png: {e}")(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
         except OSError as e:
             print(f"Warning: could not save plot: {e}")
 
