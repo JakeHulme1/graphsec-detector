@@ -3,64 +3,62 @@ set -euo pipefail
 
 # Usage: ./train_all.sh [GPU_DEVICE]
 GPU_DEVICE="${1:-2}"
-IMAGE="joh46/graphsec-detector:gpu"
-DATA_ROOT="/mnt/faster0/joh46/datasets/vudenc/prepared"
+IMAGE_NAME="joh46/graphsec-detector:gpu"
+HOST_DATA="/mnt/faster0/joh46/datasets/vudenc"
 CONFIG="config/train_config.yaml"
 OUT_BASE="output-graphsec"
 
-# Datasets
-DATASETS=(command_injection open_redirect path_disclosure remote_code_execution sql xsrf xss)
+# ─── Pull & build (optional, mirror train.sh) ────────────────────────────────
+echo "[*] Pulling latest changes…"
+git pull --ff-only
 
-# Hyperparameter grids 
+echo "[*] Building Docker image $IMAGE_NAME…"
+hare build -t "$IMAGE_NAME" -f Dockerfile .
+echo "[*] Image built!"
+
+# ─── Sanitize YAML (un-indent keys if needed) ────────────────────────────────
+sed -i -E \
+  -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
+  -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
+  "$CONFIG"
+
+# ─── Hyperparameter grid ────────────────────────────────────────────────────
 LRS=(0.008 0.010 0.012)
 WDS=(0.0010 0.0012 0.0014)
-GAMMAS=(2.0)
-DROPOUTS=(0.3)
 
+# ─── List your 7 dataset folder names under prepared/ ────────────────────────
+DATASETS=(command_injection open_redirect path_disclosure remote_code_execution sql xsrf xss)
 
 for DS in "${DATASETS[@]}"; do
-  echo "[*] Starting sweeps on dataset: $DS"
+  echo "▶[*] Grid sweep on dataset: $DS"
   for LR in "${LRS[@]}"; do
     for WD in "${WDS[@]}"; do
-      for GAMMA in "${GAMMAS[@]}"; do
-        for DP in "${DROPOUTS[@]}"; do
+      EXP_NAME="lr-${LR}_wd-${WD}"
+      OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
+      mkdir -p "$OUTDIR"
 
-          EXP="lr${LR}_wd${WD}_g${GAMMA}_d${DP}"
-          OUTDIR="${OUT_BASE}/${DS}/${EXP}"
-          mkdir -p "$OUTDIR"
+      # Patch train_config.yaml
+      sed -i -E \
+        -e "s|^dataset_name: .*|dataset_name: ${DS}|" \
+        -e "s|^learning_rate: .*|learning_rate: ${LR}|" \
+        -e "s|^weight_decay: .*|weight_decay: ${WD}|" \
+        -e "s|^output_dir: .*|output_dir: ${OUTDIR}|" \
+        "$CONFIG"
 
-          # Patch train_config.yaml in-place
-          sed -i -E \
-            -e "s|^dataset_name: .*|dataset_name: ${DS}|" \
-            -e "s|^learning_rate: .*|learning_rate: ${LR}|" \
-            -e "s|^weight_decay: .*|weight_decay: ${WD}|" \
-            -e "s|^focal_gamma: .*|focal_gamma: ${GAMMA}|" \
-            -e "s|^classifier_dropout: .*|classifier_dropout: ${DP}|" \
-            -e "s|^output_dir: .*|output_dir: ${OUTDIR}|" \
-            "$CONFIG"
+      echo "[*] Starting $DS / $EXP_NAME"
+      hare run \
+        --gpus "device=${GPU_DEVICE}" \
+        -v "$(pwd)":/app \
+        -v "${HOST_DATA}":/app/datasets/vudenc:ro \
+        -v "$(pwd)/${OUT_BASE}":/app/output-graphsec \
+        -p 10006:6006 \
+        "$IMAGE_NAME"
 
-          echo "[*] $DS | $EXP"
-
-          hare run \
-            --gpus "device=${GPU_DEVICE}" \
-            -v "$(pwd)":/app \
-            -v "${DATA_ROOT}/${DS}":/app/datasets/vudenc/prepared/"${DS}":ro \
-            -v "$(pwd)/${OUT_BASE}":/app/output-graphsec \
-            -p 10006:6006 \
-            "$IMAGE" \
-            python train.py \
-              --config $CONFIG \
-              training.epochs=10
-
-          echo "[*] Complete: $DS / $EXP"
-          echo
-
-        done
-      done
+      echo "[*] Completed $DS / $EXP_NAME"
     done
   done
-  echo "✓ Finished dataset: $DS"
+  echo "[*] Finished dataset: $DS (9 runs)"
   echo
 done
 
-echo "All sweeps finished!"
+echo "[*] All grid sweeps complete!"
