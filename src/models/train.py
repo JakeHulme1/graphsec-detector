@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from types import SimpleNamespace
 from torch.utils.data import DataLoader
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import (
     precision_recall_curve,
@@ -177,9 +178,12 @@ def train(train_model: bool = True):
     ])
 
     total_steps  = (len(train_loader)//grad_acc) * epochs
-    warmup_steps = int(warmup_scale * total_steps)
-    scheduler    = get_linear_schedule_with_warmup(
-        optimizer, num_warmup_steps=warmup_steps, num_training_steps=total_steps
+    scheduler = ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=0.5,     # LR ← LR * 0.5 when plateau
+        patience=4,     # wait 4 epochs of no PR-AUC improvement
+        verbose=True,
     )
 
     # ─── TRAINING LOOP ──────────────────────────────────────────────────────────
@@ -205,7 +209,6 @@ def train(train_model: bool = True):
 
                 if step % grad_acc == 0:
                     optimizer.step()
-                    scheduler.step()
                     optimizer.zero_grad()
                 total_train_loss += loss.item()
 
@@ -228,6 +231,8 @@ def train(train_model: bool = True):
             for k,v in metrics.items():
                 histories[f"val_{k}"].append(v)
 
+            scheduler.step(metrics["pr_auc"])
+
             # checkpoint & early-stop
             # checkpoint & early-stop on PR-AUC
             if metrics["pr_auc"] > best_val_pr:
@@ -247,7 +252,7 @@ def train(train_model: bool = True):
                     sf.write(f"Experiment: {train_cfg['output_dir']}\n")
                 sf.write(line)
 
-            if early_stop >= 3:
+            if early_stop >= 8:
                 print(f"Early stopping at epoch {epoch}")
                 break
 
