@@ -8,7 +8,7 @@ HOST_DATA="/mnt/faster0/joh46/datasets/vudenc"
 CONFIG="config/train_config.yaml"
 OUT_BASE="output-graphsec"
 
-# ─── Pull & build (optional, mirror train.sh) ────────────────────────────────
+# ─── Pull & build ────────────────────────────────
 echo "[*] Pulling latest changes…"
 git pull --ff-only
 
@@ -16,8 +16,7 @@ echo "[*] Building Docker image $IMAGE_NAME…"
 hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
-# ─── Sanitize YAML (un-indent keys if needed) ────────────────────────────────
-sed -i -E \
+# ─── Sanitize YAML (unindents keys, for some reason was indenting keys)
   -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
   -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
   "$CONFIG"
