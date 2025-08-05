@@ -181,9 +181,8 @@ def train(train_model: bool = True):
     scheduler = ReduceLROnPlateau(
         optimizer,
         mode="max",
-        factor=0.5,     # LR ← LR * 0.5 when plateau
-        patience=4,     # wait 4 epochs of no PR-AUC improvement
-        verbose=True,
+        factor=0.5,
+        patience=4,
     )
 
     # ─── TRAINING LOOP ──────────────────────────────────────────────────────────
