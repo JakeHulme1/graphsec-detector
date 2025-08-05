@@ -134,9 +134,10 @@ def train(train_model: bool = True):
     num_pos = all_train_labels.sum().item()
     num_neg = len(all_train_labels) - num_pos
     class_weights = torch.tensor([1.0, num_neg/num_pos], device=device)
-    if train_cfg["loss"] == "focal":
-        loss_fn = WeightedFocalLoss(alpha=class_weights,
-                                gamma=getattr(cfg.training, "focal_gamma", 2.0))
+    if train_cfg.get("loss", "") == "focal":
+        # pull gamma from your YAML (you should have `focal_gamma: 2.0` under `training:`)
+        gamma = float(train_cfg.get("focal_gamma", 2.0))
+        loss_fn = WeightedFocalLoss(alpha=class_weights, gamma=gamma)
     else:
         loss_fn = nn.CrossEntropyLoss(weight=class_weights)
 

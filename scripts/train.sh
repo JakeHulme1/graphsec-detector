@@ -7,7 +7,6 @@ echo "[*] Launching on GPU $GPU_DEVICE …"
 
 # constants
 IMAGE_NAME="joh46/graphsec-detector:gpu"
-POETRY_EXTRAS="--with gpu"
 HOST_DATA="/mnt/faster0/joh46/datasets/vudenc"
 OUTDIR="output-graphsec"
 
@@ -28,13 +27,12 @@ echo "[*] Image built!"
 LRS=(0.008 0.010 0.012)
 WDS=(0.0008 0.0010 0.0012)
 
-
 for LR in "${LRS[@]}"; do
   for WD in "${WDS[@]}"; do
     EXP_NAME="lr-${LR}_wd-${WD}"
     echo "[*] Starting experiment $EXP_NAME"
 
-    # patch the repo's train_config.yaml in‐place
+    # patch the YAML during training
     sed -i -E \
       -e "s|^[[:space:]]*learning_rate: .*|  learning_rate: ${LR}|" \
       -e "s|^[[:space:]]*weight_decay: .*|  weight_decay: ${WD}|" \

@@ -42,12 +42,12 @@ class GCBertClassifier(nn.Module):
         # # Classification head: just a single layer from hidden_size -> num_labels
         # self.classifier = nn.Linear(config.hidden_size, cfg.num_labels)
 
-        # two‐layer MLP head
+        # smaller‐dropout + two‐layer MLP head for more capacity
         hidden_size = config.hidden_size
         mid_size    = hidden_size // 2
-        self.dropout1   = nn.Dropout(0.4)
+        self.dropout1   = nn.Dropout(0.2)
         self.dense      = nn.Linear(hidden_size, mid_size)
-        self.dropout2   = nn.Dropout(0.4)
+        self.dropout2   = nn.Dropout(0.2)
         self.classifier = nn.Linear(mid_size, cfg.num_labels)
 
 
@@ -81,6 +81,9 @@ class GCBertClassifier(nn.Module):
             position_idx=position_idx,
             nl_inputs=None,
         )
+
+        # x = self.dropout(pooled)
+        # logits = self.classifier(x)
 
         x = self.dropout1(pooled)
         x = torch.relu(self.dense(x))
