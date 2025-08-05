@@ -205,16 +205,20 @@ def train(train_model: bool = True):
                 print(f"Early stopping at epoch {epoch}")
                 break
 
-        # Save plot
-                # Save plot of only losses to avoid dimension mismatch
+                # ─── Save loss-only plot to avoid dimension mismatch ─────────
         try:
-            loss_hist = {"train_loss": histories["train_loss"],
-                         "val_loss":   histories["val_loss"]}
-            plot_training(loss_hist,
-                          os.path.join(train_cfg["output_dir"], "training_plot.png"))
+            plt.figure()
+            epochs_range = list(range(1, len(histories["train_loss"]) + 1))
+            plt.plot(epochs_range, histories["train_loss"], label="train_loss")
+            plt.plot(epochs_range, histories["val_loss"],   label="val_loss")
+            plt.xlabel("Epoch")
+            plt.ylabel("Loss")
+            plt.legend()
+            plt.savefig(os.path.join(train_cfg["output_dir"], "training_plot.png"))
+            plt.close()
         except Exception as e:
-            print(f"Warning: could not save training_plot.png: {e}")(histories, os.path.join(train_cfg["output_dir"], "training_plot.png"))
-        except OSError as e:
+            print(f"Warning: could not save training_plot.png: {e}")
+
             print(f"Warning: could not save plot: {e}")
 
     else:
