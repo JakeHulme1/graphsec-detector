@@ -86,6 +86,13 @@ def train(train_model: bool = True):
     # ─── LOAD CONFIGS ─────────────────────────────────────────────────────────────
     with open("config/model_config.json") as f:
         mcfg = json.load(f)
+    # ─── inject head‐dropout from train_config.yaml into model_config ───────────
+    # train_cfg was just loaded from train_config.yaml above
+    # give priority to the YAML value, fall back to any existing mcfg value or 0.1
+    mcfg["classifier_dropout"] = float(
+        train_cfg.get("classifier_dropout",
+                     mcfg.get("classifier_dropout", 0.1))
+    )
     model_cfg = SimpleNamespace(**mcfg)
 
     cfg_path = os.getenv("TRAIN_CONFIG_PATH", "config/train_config.yaml")

@@ -42,12 +42,12 @@ class GCBertClassifier(nn.Module):
         # # Classification head: just a single layer from hidden_size -> num_labels
         # self.classifier = nn.Linear(config.hidden_size, cfg.num_labels)
 
-        # smaller‐dropout + two‐layer MLP head for more capacity
         hidden_size = config.hidden_size
         mid_size    = hidden_size // 2
-        self.dropout1   = nn.Dropout(0.2)
+        p = config.classifier_dropout or config.hidden_dropout_prob or 0.1
+        self.dropout1   = nn.Dropout(p)
         self.dense      = nn.Linear(hidden_size, mid_size)
-        self.dropout2   = nn.Dropout(0.2)
+        self.dropout2   = nn.Dropout(p)
         self.classifier = nn.Linear(mid_size, cfg.num_labels)
 
 

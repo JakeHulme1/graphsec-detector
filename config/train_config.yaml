@@ -4,6 +4,8 @@ seed: 42
 batch_size: 32
 epochs: 20
 
+dataset_name: xsrf
+
 learning_rate: 0.008
 weight_decay: 0.0008
 
@@ -13,7 +15,6 @@ num_workers: 0
 
 loss: focal
 focal_gamma: 2.0
+classifier_dropout: 0.3
 
 output_dir: output-graphsec
-
-dataset_name: xsrf
