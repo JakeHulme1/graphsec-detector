@@ -26,7 +26,7 @@ echo "[*] Image built!"
 
 # ─── hyperparameter grid ────
 LRS=(1e-3 3e-3 1e-2)
-WDS=(0)
+WDS=(0.001 0.005)
 
 
 for LR in "${LRS[@]}"; do
