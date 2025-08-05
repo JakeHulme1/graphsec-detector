@@ -35,10 +35,10 @@ for LR in "${LRS[@]}"; do
     echo "[*] Starting experiment $EXP_NAME"
 
     # patch the repo's train_config.yaml in‐place
-    sed -i "
-      s|^learning_rate: .*|learning_rate: ${LR}|;
-      s|^weight_decay: .*|weight_decay: ${WD}|;
-      s|^output_dir: .*|output_dir: ${OUTDIR}/${EXP_NAME}|;
+    sed -i -E"
+      s|^[[:space:]]*learning_rate: .*|  learning_rate: ${LR}|;
+      s|^[[:space:]]*weight_decay: .*|  weight_decay: ${WD}|;
+      s|^[[:space:]]*output_dir: .*|  output_dir: ${OUTDIR}/${EXP_NAME}|;
     " config/train_config.yaml
 
     # run training
