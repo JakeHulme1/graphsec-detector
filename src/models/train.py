@@ -163,7 +163,7 @@ def train(train_model: bool = True):
         histories[f"train_{m}"] = []
         histories[f"val_{m}"]   = []
 
-    best_val_loss = float("inf")
+    best_val_pr   = -float("inf")
     early_stop    = 0
 
     if train_model:
@@ -204,8 +204,9 @@ def train(train_model: bool = True):
                 histories[f"val_{k}"].append(v)
 
             # checkpoint & early-stop
-            if avg_val_loss < best_val_loss:
-                best_val_loss = avg_val_loss
+            # checkpoint & early-stop on PR-AUC
+            if metrics["pr_auc"] > best_val_pr:
+                best_val_pr = metrics["pr_auc"]
                 torch.save(classifier.state_dict(),
                            os.path.join(train_cfg["output_dir"], "best.pt"))
                 early_stop = 0
