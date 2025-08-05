@@ -129,7 +129,7 @@ def train(train_model: bool = True):
     # Unfreeze only the head + last transformer block
     head, last_block = [], []
     for name, param in classifier.named_parameters():
-        if name.startswith("encoder.encoder.layer.11."):
+        if name.startswith("encoder.encoder.layer.10.") or name.startswith("encoder.encoder.layer.11.") or name.startswith("encoder.encoder.layer.9."):
             param.requires_grad = True
             last_block.append((name, param))
         elif name.startswith("classifier.") or name.startswith("dense") or name.startswith("dropout"):
@@ -175,6 +175,9 @@ def train(train_model: bool = True):
                 logits = classifier(**batch)
                 loss   = loss_fn(logits.view(-1,2), batch["labels"].view(-1))
                 loss.backward()
+                if step % 100 == 0:
+                    print(f"[step {step}] avg grad = {classifier.classifier.weight.grad.abs().mean():.3e}")
+
                 if step % grad_acc == 0:
                     optimizer.step()
                     scheduler.step()
