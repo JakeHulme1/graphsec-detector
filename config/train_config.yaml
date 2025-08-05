@@ -1,13 +1,17 @@
+# config/train_config.yaml
 device: cuda
 seed: 42
 batch_size: 32
 epochs: 20
-learning_rate: 5e-5
-weight_decay: 0.005
+
+learning_rate: 0.008
+weight_decay: 0.0008
+
 warmup_steps_scale: 0.1
 grad_accum_steps: 1
 num_workers: 0
+
 loss: focal
 focal_gamma: 2.0
+
 output_dir: output-graphsec
-dataset_name: xsrf

@@ -24,7 +24,7 @@ echo "[*] Building Docker image $IMAGE_NAME…"
 hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
-# ─── sanitize YAML (un-indent keys) ────
+# ─── sanitize YAML (un-indent keys) as was getting issues here ────
 sed -i -E \
   -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
   -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
