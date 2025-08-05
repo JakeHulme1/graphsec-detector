@@ -16,11 +16,11 @@ echo "[*] Building Docker image $IMAGE_NAME…"
 hare build -t "$IMAGE_NAME" -f Dockerfile .
 echo "[*] Image built!"
 
-# ─── Sanitize YAML (unindents keys, for some reason was indenting keys)
+# ─── Sanitize YAML (unindents keys) ─────────────────────────────────────────
 sed -i -E \
-  -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
-  -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
-  "$CONFIG"
+    -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
+    -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
+    "$CONFIG"
 
 # ─── Hyperparameter grid ────────────────────────────────────────────────────
 LRS=(0.008 0.010 0.012)
