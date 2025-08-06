@@ -35,14 +35,8 @@ for DS in "${DATASETS[@]}"; do
     for WD in "${WDS[@]}"; do
       EXP_NAME="lr-${LR}_wd-${WD}"
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
-      
-      # ── Skip if we've already got a best.pt here ───────────────────────
-      if [ -f "${OUTDIR}/best.pt" ]; then
-        echo "   ↩ Skipping ${DS}/${EXP_NAME}, best.pt already exists."
-        continue
-      fi
 
-
+      rm -rf "${OUTDIR}"/*
       mkdir -p "$OUTDIR"
 
       # Patch train_config.yaml
