@@ -4,7 +4,7 @@ set -euo pipefail
 # Usage: ./train_all.sh [GPU_DEVICE]
 GPU_DEVICE="${1:-2}"
 IMAGE_NAME="joh46/graphsec-detector:gpu"
-HOST_DATA="/mnt/faster0/joh46/datasets/vudenc"
+HOST_DATA="/mnt/faster0/joh46/graphsec-detector/datasets/vudenc"
 CONFIG="config/train_config.yaml"
 OUT_BASE="output-graphsec"
 
