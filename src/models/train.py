@@ -25,6 +25,7 @@ from sklearn.metrics import (
 from data.dataset import VulnerabilityDataset
 from models.graphcodebert_cls import GCBertClassifier
 from utils.metrics import compute_metrics
+from utils.plot import plot_training
 
 from torch import nn
 
@@ -257,6 +258,8 @@ def train(train_model: bool = True):
 
         # ─── SAVE TRAIN/VAL LOSS PLOT ────────────────────────────────────────
         try:
+            metrics_png = os.path.join(train_cfg["output_dir"], "metrics.png")
+            plot_training(histories, metrics_png)
             plt.figure()
             epochs_range = list(range(1, len(histories["train_loss"]) + 1))
             plt.plot(epochs_range, histories["train_loss"], label="train_loss")
@@ -268,6 +271,7 @@ def train(train_model: bool = True):
             plt.close()
         except Exception as e:
             print(f"Warning: could not save training_plot.png: {e}")
+            print(f"Warning: could not save metrics.png: {e}")
 
     else:
         print("Skipping training, loading best checkpoint…")
