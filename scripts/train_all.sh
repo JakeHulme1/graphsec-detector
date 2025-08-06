@@ -30,11 +30,19 @@ WDS=(0.0010 0.0012 0.0014)
 DATASETS=(command_injection open_redirect path_disclosure remote_code_execution sql xsrf xss)
 
 for DS in "${DATASETS[@]}"; do
-  echo "▶[*] Grid sweep on dataset: $DS"
+  echo "[*] Grid sweep on dataset: $DS"
   for LR in "${LRS[@]}"; do
     for WD in "${WDS[@]}"; do
       EXP_NAME="lr-${LR}_wd-${WD}"
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
+      
+      # ── Skip if we've already got a best.pt here ───────────────────────
+      if [ -f "${OUTDIR}/best.pt" ]; then
+        echo "   ↩ Skipping ${DS}/${EXP_NAME}, best.pt already exists."
+        continue
+      fi
+
+
       mkdir -p "$OUTDIR"
 
       # Patch train_config.yaml
