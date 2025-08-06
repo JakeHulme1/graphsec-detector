@@ -29,6 +29,17 @@ from utils.plot import plot_training
 
 from torch import nn
 
+# ─── SMOOTHING HELPERS ────────────────────────────────────────────
+def smooth_np(x: list[float], window: int = 5) -> list[float]:
+    """
+    Moving average via NumPy convolution.
+    Pads edges so output length == input length.
+    """
+    if len(x) < window:
+        return x
+    kernel = np.ones(window, dtype=float) / window
+    return np.convolve(x, kernel, mode="same").tolist()
+
 class WeightedFocalLoss(nn.Module):
     def __init__(self, alpha, gamma=2.0, eps=1e-7):
         super().__init__()
@@ -42,7 +53,6 @@ class WeightedFocalLoss(nn.Module):
         w     = self.alpha[targets]
         loss  = - w * (1 - pt)**self.gamma * pt.log()
         return loss.mean()
-
 
 
 def set_seed(seed: int):
@@ -140,7 +150,6 @@ def train(train_model: bool = True):
     num_neg = len(all_train_labels) - num_pos
     class_weights = torch.tensor([1.0, num_neg/num_pos], device=device)
     if train_cfg.get("loss", "") == "focal":
-        # pull gamma from your YAML (you should have `focal_gamma: 2.0` under `training:`)
         gamma = float(train_cfg.get("focal_gamma", 2.0))
         loss_fn = WeightedFocalLoss(alpha=class_weights, gamma=gamma)
     else:
@@ -194,6 +203,7 @@ def train(train_model: bool = True):
 
     best_val_pr   = -float("inf")
     early_stop    = 0
+    smoother      = smooth_np
 
     if train_model:
         for epoch in range(1, epochs+1):
@@ -214,6 +224,23 @@ def train(train_model: bool = True):
 
             histories["train_loss"].append(total_train_loss / len(train_loader))
 
+            # compute and record training metrics
+            classifier.eval()
+            all_train_logits, all_train_labels = [], []
+            with torch.no_grad():
+                for batch in train_loader:
+                    batch = {k: v.to(device) for k, v in batch.items()}
+                    logits = classifier(**batch)
+                    all_train_logits.append(logits)
+                    all_train_labels.append(batch["labels"])
+            train_metrics = compute_metrics(
+                torch.cat(all_train_logits),
+                torch.cat(all_train_labels)
+            )
+            for name, value in train_metrics.items():
+                histories[f"train_{name}"].append(value)
+            classifier.train()
+
             # validation
             classifier.eval()
             val_loss, all_logits, all_labels = 0.0, [], []
@@ -233,9 +260,9 @@ def train(train_model: bool = True):
 
             scheduler.step(metrics["pr_auc"])
 
-            # checkpoint & early-stop
             # checkpoint & early-stop on PR-AUC
-            if metrics["pr_auc"] > best_val_pr:
+            sm_val_pr = smooth_np(histories["val_pr_auc"], window=5)
+            if sm_val_pr[-1] > best_val_pr:
                 best_val_pr = metrics["pr_auc"]
                 torch.save(classifier.state_dict(),
                            os.path.join(train_cfg["output_dir"], "best.pt"))
@@ -259,7 +286,9 @@ def train(train_model: bool = True):
         # ─── SAVE TRAIN/VAL LOSS PLOT ────────────────────────────────────────
         try:
             metrics_png = os.path.join(train_cfg["output_dir"], "metrics.png")
-            plot_training(histories, metrics_png)
+            sm_hist = {k: smooth_np(v, window=5) for k, v in histories.items()}
+            plot_training(sm_hist, metrics_png)
+
             plt.figure()
             epochs_range = list(range(1, len(histories["train_loss"]) + 1))
             plt.plot(epochs_range, histories["train_loss"], label="train_loss")
