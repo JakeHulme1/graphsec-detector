@@ -1,0 +1,18 @@
+rules:
+  - id: ci-os-system
+    message: "Use of os.system() may lead to command injection"
+    severity: ERROR
+    languages: [generic]
+    pattern-regex: '\bos\.system\s*\(.*\)'
+
+  - id: ci-subprocess-shell-true
+    message: "Possible command injection via subprocess(..., shell=True)"
+    severity: ERROR
+    languages: [generic]
+    pattern-regex: '\bsubprocess\.(call|run|Popen)\s*\([^)]*shell\s*=\s*True[^)]*\)'
+
+  - id: ci-backticks
+    message: "Backtick execution may lead to command injection"
+    severity: WARNING
+    languages: [generic]
+    pattern-regex: '`.+?`'

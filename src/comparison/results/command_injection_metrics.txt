@@ -1,6 +1,0 @@
-Dataset: command_injection
-TP=0  FP=0  TN=1134  FN=519
-Precision=0.000
-Recall   =0.000
-F1       =0.000
-Wrapped  =1651
