@@ -29,6 +29,9 @@ datasets/vudenc/prepared/**
 !datasets/vudenc/prepared/**/      
 !datasets/vudenc/prepared/.gitkeep 
 
+# BANDIT DATA
+**/*_bandit/
+
 # LOGS
 logs/
 
