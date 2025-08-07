@@ -37,7 +37,7 @@ for DS in "${DATASETS[@]}"; do
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
 
       # skip if this run already finished
-      if [[ -f "${OUTDIR}/experiment_summary.txt" ]]; then
+      if [[ -f "${OUTDIR}/best.pt" ]]; then
         echo "[*] Skipping $DS / $EXP_NAME (already done)"
         continue
       fi
