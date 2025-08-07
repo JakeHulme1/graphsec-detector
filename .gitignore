@@ -29,6 +29,21 @@ datasets/vudenc/prepared/**
 !datasets/vudenc/prepared/**/      
 !datasets/vudenc/prepared/.gitkeep 
 
+src/comparison/command_injection
+src/comparison/open_redirect
+src/comparison/path_disclosure
+src/comparison/remote_code_execution
+src/comparison/sql
+src/comparison/xsrf
+src/comparison/xss
+src/comparison/command_injection_bandit
+src/comparison/open_redirect_bandit
+src/comparison/path_disclosure_bandit
+src/comparison/remote_code_execution_bandit
+src/comparison/sql_bandit
+src/comparison/xsrf_bandit
+src/comparison/xss_bandit
+
 # BANDIT DATA
 **/*_bandit/
 
