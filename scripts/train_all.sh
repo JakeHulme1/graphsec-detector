@@ -37,12 +37,12 @@ for DS in "${DATASETS[@]}"; do
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
 
       # skip if this run already finished
-      if [[ -f "${OUTDIR}/best.pt" ]]; then
-        echo "[*] Skipping $DS / $EXP_NAME (already done)"
-        continue
-      fi
+        if [[ -d "$OUTDIR" && -n "$(ls -A "$OUTDIR")" ]]; then
+          echo "[*] Skipping $DS / $EXP_NAME (already done)"
+          continue
+        fi
 
-      rm -rf "${OUTDIR}"/*
+      rm -rf "$OUTDIR"
       mkdir -p "$OUTDIR"
 
       # Patch train_config.yaml
