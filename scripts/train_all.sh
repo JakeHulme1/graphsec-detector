@@ -36,6 +36,12 @@ for DS in "${DATASETS[@]}"; do
       EXP_NAME="lr-${LR}_wd-${WD}"
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
 
+      # skip if this run already finished
+      if [[ -f "${OUTDIR}/experiment_summary.txt" ]]; then
+        echo "[*] Skipping $DS / $EXP_NAME (already done)"
+        continue
+      fi
+
       rm -rf "${OUTDIR}"/*
       mkdir -p "$OUTDIR"
 
