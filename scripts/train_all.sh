@@ -39,13 +39,13 @@ for DS in "${DATASETS[@]}"; do
       EXP_NAME="lr-${LR}_wd-${WD}"
       OUTDIR="${OUT_BASE}/${DS}/${EXP_NAME}"
 
-      # skip if this run already finished
-        if [[ -d "$OUTDIR" && -n "$(ls -A "$OUTDIR")" ]]; then
+        # skip if this run folder already exists
+        if [[ -d "$OUTDIR" ]]; then
           echo "[*] Skipping $DS / $EXP_NAME (already done)"
           continue
         fi
 
-      rm -rf "$OUTDIR"
+      # only create when it didn’t exist
       mkdir -p "$OUTDIR"
 
       # Patch train_config.yaml
