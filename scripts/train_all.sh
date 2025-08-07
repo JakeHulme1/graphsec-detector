@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
 # Usage: ./train_all.sh [GPU_DEVICE]
 GPU_DEVICE="${1:-2}"
 IMAGE_NAME="joh46/graphsec-detector:gpu"
