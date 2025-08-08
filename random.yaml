@@ -1,0 +1,92 @@
+rows:
+  - vuln: SQL Injection
+    full:
+      f1: 0.403
+      pr_auc: 0.33   
+      thr_val: 0.1  
+      lr: 1e-5       
+      wd: 1e-4        
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: Command Injection
+    full:
+      f1: 0.502   
+      pr_auc: 0.59   
+      thr_val: 0.1  
+      lr: 3e-5       
+      wd: 0.01        
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: Remote Code Execution
+    full:
+      f1: 0.087       
+      pr_auc: 0.33   
+      thr_val: 0.1  
+      lr: 5e-5       
+      wd: 1e-3          
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: Path Disclosure
+    full:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:       
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: XSS
+    full:
+      f1:        
+      pr_auc:    
+      thr_val:   
+      lr:        
+      wd:         
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: XSRF
+    full:
+      f1:        
+      pr_auc:    
+      thr_val:   
+      lr:        
+      wd:         
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:
+  - vuln: Open Redirect
+    full:
+      f1:        
+      pr_auc:    
+      thr_val:   
+      lr:        
+      wd:         
+    partial:
+      f1: 
+      pr_auc: 
+      thr_val: 
+      lr: 
+      wd:

@@ -17,4 +17,7 @@ loss: focal
 focal_gamma: 2.0
 classifier_dropout: 0.3
 
+threshold: 0.5          
+smoothing_window: 3     
+
 output_dir: output-graphsec
