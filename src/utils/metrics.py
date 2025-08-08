@@ -16,6 +16,15 @@ def compute_metrics(
     """
     Calculate accuracy, precision, recall, F1 at the given threshold (if provided),
     plus threshold-free PR-AUC (AP) and ROC-AUC from probabilities.
+
+    Args:
+        logits: (N, 2) raw model outputs.
+        labels: (N,) ground-truth class indices {0,1}, dtype torch.long.
+        threshold: if float in [0,1], use probs>=threshold for predictions.
+                   if None, fall back to argmax over logits.
+
+    Returns:
+        dict with keys: accuracy, precision, recall, f1, pr_auc, roc_auc
     """
     assert isinstance(logits, torch.Tensor), "logits must be a torch.Tensor"
     assert isinstance(labels, torch.Tensor), "labels must be a torch.Tensor"
@@ -40,4 +49,13 @@ def compute_metrics(
         true, preds, average="binary", zero_division=0
     )
     pr_auc = average_precision_score(true, probs)  # PR-AUC (AP)
-    roc_auc = roc_auc_score(true, probs)_
+    roc_auc = roc_auc_score(true, probs)
+
+    return {
+        "accuracy": acc,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "pr_auc": pr_auc,
+        "roc_auc": roc_auc,
+    }
