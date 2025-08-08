@@ -81,7 +81,7 @@ while read -r DS LR WD THR; do
     -v "$(pwd)":/app \
     -v "${HOST_DATA}":/app/datasets/vudenc:ro \
     -v "$(pwd)/${OUT_BASE}":/app/output-graphsec \
-    -p :6006 \
+    -p 127.0.0.1:0:6006 \
     "$IMAGE_NAME"
 
   echo "[*] Completed: ${DS}"
