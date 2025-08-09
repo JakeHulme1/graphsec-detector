@@ -1,4 +1,35 @@
-  # --- unique completion marker per LR/WD/THR
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}/.."
+
+GPU_DEVICE="${1:-2}"
+IMAGE_NAME="joh46/graphsec-detector:gpu"
+HOST_DATA="/mnt/faster0/joh46/graphsec-detector/datasets/vudenc"
+CONFIG="config/train_config.yaml"
+OUT_BASE="output-graphsec"
+
+SMOOTH="${SMOOTH:-3}"
+FORCE="${FORCE:-0}"
+OUT_SUBDIR="${OUT_SUBDIR:-threshold_run}"
+
+# sanity checks
+[[ -f "$CONFIG" ]] || { echo "Config not found: $CONFIG"; exit 1; }
+
+# normalize YAML keys once
+sed -i -E \
+  -e 's/^[[:space:]]*learning_rate:/learning_rate:/' \
+  -e 's/^[[:space:]]*weight_decay:/weight_decay:/' \
+  -e 's/^[[:space:]]*dataset_name:/dataset_name:/' \
+  -e 's/^[[:space:]]*output_dir:/output_dir:/' \
+  -e 's/^[[:space:]]*threshold:/threshold:/' \
+  -e 's/^[[:space:]]*smoothing_window:/smoothing_window:/' \
+  "$CONFIG"
+
+while read -r DS LR WD THR; do
+  [[ -z "${DS:-}" ]] && continue
+
   thr_safe="${THR//./p}"; lr_safe="${LR//./p}"; wd_safe="${WD//./p}"
   OUTDIR="${OUT_BASE}/${DS}/${OUT_SUBDIR}"
   DONE="${OUTDIR}/.done_${lr_safe}_${wd_safe}_${thr_safe}"
@@ -7,20 +38,15 @@
   echo "[*] Starting: DS=${DS} LR=${LR} WD=${WD} THR=${THR}"
   echo "[*] Output:   ${OUTDIR}"
 
-  # Only skip if this exact combo is done (not merely because dir exists)
   if [[ "${FORCE}" != "1" && -f "${DONE}" ]]; then
     echo "[*] Skipping ${DS} (done for lr=${LR}, wd=${WD}, thr=${THR}). Set FORCE=1 to rerun."
     continue
   fi
 
-  # If FORCE=1, wipe; otherwise keep existing files and append new results
-  if [[ "${FORCE}" == "1" ]]; then
-    echo "[*] FORCE=1 — removing existing ${OUTDIR}"
-    rm -rf "${OUTDIR}"
-  fi
+  [[ "${FORCE}" == "1" ]] && { echo "[*] FORCE=1 — removing ${OUTDIR}"; rm -rf "${OUTDIR}"; }
   mkdir -p "${OUTDIR}"
 
-  # Patch YAML for this run (note absolute path so container writes into mount)
+  # Patch YAML for this run; note absolute output path inside the container.
   sed -i -E \
     -e "s|^dataset_name: .*|dataset_name: ${DS}|" \
     -e "s|^learning_rate: .*|learning_rate: ${LR}|" \
@@ -28,14 +54,14 @@
     -e "s|^output_dir: .*|output_dir: /app/${OUTDIR}|" \
     "$CONFIG"
 
-  # threshold + smoothing
   if grep -q '^threshold:' "$CONFIG"; then
-    sed -i -E -e "s|^threshold: .*|threshold: ${THR}|" "$CONFIG"
+    sed -i -E "s|^threshold: .*|threshold: ${THR}|" "$CONFIG"
   else
     echo "threshold: ${THR}" >> "$CONFIG"
   fi
+
   if grep -q '^smoothing_window:' "$CONFIG"; then
-    sed -i -E -e "s|^smoothing_window: .*|smoothing_window: ${SMOOTH}|" "$CONFIG"
+    sed -i -E "s|^smoothing_window: .*|smoothing_window: ${SMOOTH}|" "$CONFIG"
   else
     echo "smoothing_window: ${SMOOTH}" >> "$CONFIG"
   fi
@@ -59,3 +85,15 @@
 
   touch "${DONE}"
   echo "[*] Completed: ${DS} (lr=${LR}, wd=${WD}, thr=${THR})"
+done <<'EOF'
+sql 0.008 0.0010 0.5
+command_injection 0.010 0.0010 0.5
+remote_code_execution 0.008 0.0014 0.2
+path_disclosure 0.008 0.0014 0.4
+xss 0.008 0.0010 0.3
+xsrf 0.010 0.0012 0.5
+open_redirect 0.012 0.0010 0.4
+EOF
+
+echo
+echo "[*] Done: thresholded runs."
